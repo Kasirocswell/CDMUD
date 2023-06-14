@@ -1,5 +1,4 @@
 import React from "react";
-import { useRouter } from "next/router";
 import { useState } from "react";
 import supabase from "../utils/supabase";
 
@@ -10,7 +9,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     // handle login
-    const { user, session, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
@@ -23,25 +22,6 @@ const Login = ({ LoggedIn, tabsToggle }) => {
     console.log("User Logged In");
 
     LoggedIn();
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    const { user, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
-
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Success! Check your email for a confirmation link.");
-    }
-    console.log(user);
-    //   const { data, error: insertError } = await supabase
-    //     .from("Users")
-    //     .insert([{ email: email, password: password }]);
   };
 
   return (

@@ -29,7 +29,7 @@ export default function Home() {
       {!isLoggedIn ? (
         <div>
           {loginTab ? (
-            <Login tabsToggle={toggleTabs} LoggedIn={isAuthenticated} />
+            <Login LoggedIn={isAuthenticated} tabsToggle={toggleTabs} />
           ) : (
             <Signup LoggedIn={isAuthenticated} tabsToggle={toggleTabs} />
           )}

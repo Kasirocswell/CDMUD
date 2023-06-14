@@ -1,4 +1,7 @@
+import React from "react";
 import { useState } from "react";
+import supabase from "../utils/supabase";
+
 const Signup = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -10,6 +13,17 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
       email: email,
       password: password,
     });
+
+    const { data, session, err } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    // assign user ID to char table
+
+    const { userData, error: insertError } = await supabase
+      .from("Char")
+      .insert([{ uid: data.user.id }]);
 
     if (error) {
       console.log(error);

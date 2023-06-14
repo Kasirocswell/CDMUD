@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
+import supabase from "../utils/supabase";
+import { getUser, setCharacter, charCheck } from "./utils/CharacterUtils";
 
 let socket;
 
@@ -26,8 +28,13 @@ export default function Home() {
       ]);
     });
 
+    // Check if character exists on user account abstract //
     socket.on("character check", () => {
       console.log("character check");
+      getUser();
+      setTimeout(getUser, 4000);
+      setTimeout(charCheck, 8000);
+      setTimeout(setCharacter, 12000);
     });
 
     return () => {
