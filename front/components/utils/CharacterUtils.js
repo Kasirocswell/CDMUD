@@ -10,11 +10,10 @@ let characterName;
 
 export const createCharacter = async () => {
   characterName = window.prompt("Enter your character name: ", "");
-  const { userData, error: insertError } = await supabase
+  const { data, error } = await supabase
     .from("Char")
-    .select("*")
-    .eq("uid", currUser.id)
-    .insert([{ char_name: characterName }]);
+    .update({ char_name: characterName })
+    .match({ uid: currUser.id });
 };
 
 // current user function
