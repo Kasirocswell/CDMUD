@@ -1,6 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
+import { initCharacter } from "./utils/CharacterUtils";
 
 const Signup = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
@@ -19,10 +20,26 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
       password: password,
     });
 
-    // assign user ID to char table
+    // Initialize character
 
     const { userData, error: insertError } = await supabase
       .from("Char")
+      .insert([{ uid: data.user.id }]);
+
+    const { inventoryData, error: inventoryError } = await supabase
+      .from("Inventory")
+      .insert([{ uid: data.user.id }]);
+
+    const { equipmentData, error: equipmentError } = await supabase
+      .from("Equipment")
+      .insert([{ uid: data.user.id }]);
+
+    const { attributesData, error: attributesError } = await supabase
+      .from("Attributes")
+      .insert([{ uid: data.user.id }]);
+
+    const { vehiclesData, error: vehiclesError } = await supabase
+      .from("Vehicles")
       .insert([{ uid: data.user.id }]);
 
     if (error) {
