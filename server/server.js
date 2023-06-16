@@ -21,6 +21,10 @@ io.on("connection", (socket) => {
   console.log("A client connected");
 
   io.emit("character check");
+  io.emit("terminal update", {
+    type: "global",
+    message: `Welcome to Celestial`,
+  });
 
   socket.on("game command", (command) => {
     if (command.startsWith('"') && command.endsWith('"')) {
@@ -31,7 +35,12 @@ io.on("connection", (socket) => {
       // Also update the terminal
       io.emit("terminal update", {
         type: "chat",
-        message: `Chat: ${chatMessage}`,
+        message: `${chatMessage}`,
+      });
+    } else if (command.type == "global") {
+      io.emit("terminal update", {
+        type: "global",
+        message: `${command}`,
       });
     } else {
       // If the command isn't in quotes, we treat it as a system command
@@ -39,8 +48,59 @@ io.on("connection", (socket) => {
       // Process the command here, then emit the result
 
       // SYSTEM COMMAND LIST
-      if (command.toLowerCase() == "inventory") {
-        io.emit("Inventory Check");
+      if (
+        command.toLowerCase() == "inventory" ||
+        command.toLowerCase() == "inv"
+      ) {
+        io.emit("inventory check");
+      } else if (
+        command.toLowerCase() == "status" ||
+        command.toLowerCase() == "stats"
+      ) {
+        io.emit("status check");
+      } else if (command.toLowerCase() == "help") {
+        io.emit("help check");
+      } else if (command.toLowerCase() == "look") {
+        io.emit("look check");
+      } else if (command.toLowerCase().startsWith("equip")) {
+        io.emit("equip item");
+      } else if (command.toLowerCase().startsWith("unequip")) {
+        io.emit("unequip item");
+      } else if (command.toLowerCase().startsWith("drop")) {
+        io.emit("drop item");
+      } else if (
+        command.toLowerCase().startsWith("attack") ||
+        command.toLowerCase().startsWith("kill")
+      ) {
+        io.emit("attack check");
+      } else if (command.toLowerCase().startsWith("yield")) {
+        io.emit("yield check");
+      } else if (command.toLowerCase().startsWith("use")) {
+        io.emit("use check");
+      } else if (command.toLowerCase().startsWith("loot")) {
+        io.emit("loot check");
+      } else if (command.toLowerCase().startsWith("mount")) {
+        io.emit("mount check");
+      } else if (
+        command.toLowerCase() == "north" ||
+        command.toLowerCase() == "n"
+      ) {
+        io.emit("move north");
+      } else if (
+        command.toLowerCase() == "south" ||
+        command.toLowerCase() == "s"
+      ) {
+        io.emit("move south");
+      } else if (
+        command.toLowerCase() == "east" ||
+        command.toLowerCase() == "e"
+      ) {
+        io.emit("move east");
+      } else if (
+        command.toLowerCase() == "west" ||
+        command.toLowerCase() == "w"
+      ) {
+        io.emit("move west");
       } else {
         io.emit("terminal update", {
           type: "system",

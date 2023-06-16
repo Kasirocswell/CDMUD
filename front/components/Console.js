@@ -2,17 +2,17 @@ import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import supabase from "../utils/supabase";
 import { getUser, setCharacter, charCheck } from "./utils/CharacterUtils";
+import { title } from "./AsciiArt";
 
 let socket;
 
 export default function Home() {
   const [message, setMessage] = useState("");
-  const [terminal, setTerminal] = useState([]); // state for terminal output
+  const [terminal, setTerminal] = useState([]);
 
   useEffect(() => {
     socket = io("http://localhost:3000");
 
-    // listen for chat messages
     socket.on("chat message", (msg) => {
       setTerminal((prevTerminal) => [
         ...prevTerminal,
@@ -20,7 +20,20 @@ export default function Home() {
       ]);
     });
 
-    // listen for terminal updates
+    socket.on("global message", (msg) => {
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        { type: "global", message: msg.message }, // updated line
+      ]);
+    });
+
+    socket.on("system message", (msg) => {
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        { type: "system", message: msg.message }, // updated line
+      ]);
+    });
+
     socket.on("terminal update", (update) => {
       setTerminal((prevTerminal) => [
         ...prevTerminal,
@@ -28,13 +41,16 @@ export default function Home() {
       ]);
     });
 
-    // Check if character exists on user account abstract //
     socket.on("character check", () => {
       console.log("character check");
       getUser();
       setTimeout(getUser, 4000);
       setTimeout(charCheck, 8000);
       setTimeout(setCharacter, 12000);
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        { type: "global", message: title }, // updated line
+      ]);
     });
 
     return () => {
@@ -45,9 +61,19 @@ export default function Home() {
   const submit = (e) => {
     e.preventDefault();
     if (socket) {
-      // Always emit as a game command
       socket.emit("game command", message);
       setMessage("");
+    }
+  };
+
+  const colorSelector = (type) => {
+    switch (type) {
+      case "global":
+        return "text-white";
+      case "chat":
+        return "text-green-300";
+      default:
+        return "text-yellow-400";
     }
   };
 
@@ -64,9 +90,7 @@ export default function Home() {
           {terminal.map((msg, idx) => (
             <p
               key={idx}
-              className={`whitespace-pre ${
-                msg.type === "system" ? "text-red-500" : "text-green-400"
-              }`}
+              className={`whitespace-pre ${colorSelector(msg.type)}`}
             >
               {msg.message}
             </p>
