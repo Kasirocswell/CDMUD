@@ -37,11 +37,16 @@ io.on("connection", (socket) => {
       // If the command isn't in quotes, we treat it as a system command
       console.log("System command received from client:", command);
       // Process the command here, then emit the result
-      // For this example, we're just echoing the command
-      io.emit("terminal update", {
-        type: "system",
-        message: `System command executed: ${command}`,
-      });
+
+      // SYSTEM COMMAND LIST
+      if (command.toLowerCase() == "inventory") {
+        io.emit("Inventory Check");
+      } else {
+        io.emit("terminal update", {
+          type: "system",
+          message: `System command does not exist: ${command}`,
+        });
+      }
     }
   });
 

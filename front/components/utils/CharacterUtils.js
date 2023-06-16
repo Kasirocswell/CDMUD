@@ -40,19 +40,9 @@ export const createCharacter = async () => {
     .update({ char_race: characterRace })
     .match({ uid: currUser.id });
 
-  const { data3, error3 } = await supabase
-    .from("Char")
-    .update({ char_health: 100 })
-    .match({ uid: currUser.id });
-
   const { data4, error4 } = await supabase
     .from("Char")
     .update({ current_location: "Home" })
-    .match({ uid: currUser.id });
-
-  const { data5, error5 } = await supabase
-    .from("Char")
-    .update({ char_level: 1 })
     .match({ uid: currUser.id });
 };
 
