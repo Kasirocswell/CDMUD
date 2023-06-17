@@ -19,13 +19,14 @@ app.get("/", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log("A client connected");
-
+  // On Connection Init Events
   io.emit("character check");
   io.emit("terminal update", {
     type: "global",
-    message: `Welcome to Celestial`,
+    message: `Welcome to Celestial Deep`,
   });
 
+  // On Game Command from Console.js
   socket.on("game command", (command) => {
     if (command.startsWith('"') && command.endsWith('"')) {
       // If the command is in quotes, we treat it as a chat message
@@ -33,7 +34,7 @@ io.on("connection", (socket) => {
       console.log("Chat message received from client:", chatMessage);
       // We then emit the chat message to all connected clients
       // Also update the terminal
-      io.emit("terminal update", {
+      io.emit("chat message", {
         type: "chat",
         message: `${chatMessage}`,
       });

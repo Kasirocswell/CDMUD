@@ -17,7 +17,7 @@ let characterRace;
 
 export const createCharacter = async () => {
   characterName = window.prompt("Enter your character name: ", "");
-  const { data, error } = await supabase
+  const { data: char_name, error } = await supabase
     .from("Char")
     .update({ char_name: characterName })
     .match({ uid: currUser.id });
@@ -44,6 +44,13 @@ export const createCharacter = async () => {
     .from("Char")
     .update({ current_location: "Home" })
     .match({ uid: currUser.id });
+
+  const { data5: handle, handleErorr } = await supabase
+    .from("Char")
+    .select()
+    .eq("uid", currUser.id);
+  await sessionStorage.setItem("handle", characterName);
+  await console.log("handle: " + sessionStorage.getItem("handle"));
 };
 
 // Get current user function

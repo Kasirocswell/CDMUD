@@ -10,13 +10,17 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [terminal, setTerminal] = useState([]);
 
+  // Listening Events UseEffect
   useEffect(() => {
     socket = io("http://localhost:3000");
 
     socket.on("chat message", (msg) => {
       setTerminal((prevTerminal) => [
         ...prevTerminal,
-        { type: "chat", message: "Chat: " + msg.message }, // updated line
+        {
+          type: "chat",
+          message: `${sessionStorage.getItem("handle")}: ` + msg.message,
+        }, // updated line
       ]);
     });
 
@@ -41,17 +45,20 @@ export default function Home() {
       ]);
     });
 
-    socket.on("character check", () => {
+    // Character Check
+    socket.on("character check", async () => {
       console.log("character check");
-      getUser();
-      setTimeout(getUser, 4000);
-      setTimeout(charCheck, 8000);
-      setTimeout(setCharacter, 12000);
+      await getUser();
+      await charCheck();
+      await setCharacter();
       setTerminal((prevTerminal) => [
         ...prevTerminal,
         { type: "global", message: title }, // updated line
       ]);
     });
+
+    // System Command Event Listeners
+    socket.on("inventory check", () => {});
 
     return () => {
       socket.disconnect();
