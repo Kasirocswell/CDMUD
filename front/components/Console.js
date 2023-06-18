@@ -215,14 +215,11 @@ export default function Home() {
       <div className="overflow-hidden flex flex-col justify-between text-white w-[60%] h-[80%] rounded p-6">
         <div
           ref={chatEndRef} // Assign the ref here
-          className="overflow-auto custom-scrollbar bg-black mb-6 h-[100%] w-[100%] rounded-xl"
+          className=" whitespace-pre-wrap overflow-auto custom-scrollbar bg-black mb-6 h-[100%] w-[100%] rounded-xl"
           style={{ minHeight: "150px" }}
         >
           {terminal.map((msg, idx) => (
-            <p
-              key={idx}
-              className={`whitespace-pre ${colorSelector(msg.type)}`}
-            >
+            <p key={idx} className={` ${colorSelector(msg.type)} px-36`}>
               {msg.message}
             </p>
           ))}
