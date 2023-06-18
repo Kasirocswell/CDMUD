@@ -1,7 +1,6 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
-import { initCharacter } from "./utils/CharacterUtils";
 
 const Signup = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
@@ -26,10 +25,6 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
       .from("Char")
       .insert([{ uid: data.user.id }]);
 
-    const { inventoryData, error: inventoryError } = await supabase
-      .from("Inventory")
-      .insert([{ uid: data.user.id }]);
-
     const { equipmentData, error: equipmentError } = await supabase
       .from("Equipment")
       .insert([{ uid: data.user.id }]);
@@ -50,7 +45,7 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
     }
   };
   return (
-    <div className="w-screen h-screen flex ml-[35%] mt-[7%] overflow-hidden">
+    <div className="w-screen h-screen flex ml-[35%] mt-[7%] overflow-hidden bg-transparent">
       <div className=" w-[40%] h-[60%] bg-white flex flex-col rounded-xl">
         <h1 className="mx-auto mt-4 text-blue-800 text-6xl font-title">
           Celestial Deep

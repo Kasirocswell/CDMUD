@@ -102,6 +102,16 @@ io.on("connection", (socket) => {
         command.toLowerCase() == "w"
       ) {
         io.emit("move west");
+      } else if (
+        command.toLowerCase() == "enter" ||
+        command.toLowerCase() == "en"
+      ) {
+        io.emit("enter check");
+      } else if (
+        command.toLowerCase() == "exit" ||
+        command.toLowerCase() == "ex"
+      ) {
+        io.emit("exit check");
       } else {
         io.emit("terminal update", {
           type: "system",

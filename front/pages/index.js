@@ -2,6 +2,8 @@ import Login from "../components/Login";
 import Signup from "../components/Singup";
 import Console from "../components/Console";
 import { useState } from "react";
+import backgroundImage from "../public/space.jpg";
+import Image from "next/Image";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState();
@@ -25,7 +27,7 @@ export default function Home() {
   }
 
   return (
-    <div className="w-screen h-screen bg-gray-800 flex overflow-hidden">
+    <div className="w-screen h-screen flex bg-[url(../public/space.jpg)] overflow-hidden bg-cover">
       {!isLoggedIn ? (
         <div>
           {loginTab ? (

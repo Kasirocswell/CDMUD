@@ -42,7 +42,7 @@ export const createCharacter = async () => {
 
   const { data4, error4 } = await supabase
     .from("Char")
-    .update({ current_location: "Home" })
+    .update({ current_location: "Holding Cells" })
     .match({ uid: currUser.id });
 
   const { data5: handle, handleErorr } = await supabase
@@ -60,6 +60,7 @@ export const getUser = async () => {
   } = await supabase.auth.getUser();
   console.log(user);
   setUser(user);
+  return user;
 };
 
 export const setUser = (user) => {

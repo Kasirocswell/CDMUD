@@ -2,6 +2,7 @@ import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
 import { getUser, setUser } from "./utils/CharacterUtils";
+import backgroundImage from "../public/space.jpg";
 
 const Login = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,8 @@ const Login = ({ LoggedIn, tabsToggle }) => {
       password: password,
     });
 
+    // const { data2, error2 } = await supabase.from;
+
     if (error) {
       console.log("Error Logging In:", error.message);
       return;
@@ -26,7 +29,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
   };
 
   return (
-    <div className="w-screen h-screen flex ml-[35%] mt-[7%] overflow-hidden">
+    <div className="w-screen h-screen flex ml-[35%] mt-[7%] overflow-hidden bg-transparent">
       <div className=" w-[40%] h-[60%] bg-white flex flex-col rounded-xl">
         <h1 className="mx-auto mt-4 text-blue-800 text-6xl font-title">
           Celestial Deep
@@ -42,7 +45,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
             type="email"
             value={email}
             placeholder="email"
-            className="w-[200px] rounded-sm"
+            className="w-[200px] rounded-sm bg-gray-200"
             onChange={(e) => setEmail(e.target.value)}
           ></input>
           <label className="text-black mt-2 font-title">Password</label>
@@ -50,7 +53,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
             type="password"
             value={password}
             placeholder="*********"
-            className="w-[200px] rounded-sm"
+            className="w-[200px] rounded-sm bg-gray-50"
             onChange={(e) => setPassword(e.target.value)}
           ></input>
           <div className=" text-black">
