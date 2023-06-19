@@ -196,10 +196,19 @@ export default function Home() {
           .eq("name", `${itemNameCapitalized}`);
         console.log(armorCheck.length);
 
+        let itemSlotType;
+        if (armorCheck.length > 0) {
+          itemSlotType = armorCheck[0];
+        } else if (weaponCheck.length > 0) {
+          itemSlotType = weaponCheck[0];
+        } else {
+          console.log("item doesn't exist");
+        }
+
         const { data: slotCheck, slotCheckError } = await supabase
           .from("Equipment")
           .select()
-          .eq(`${armorCheck[0].slot}`, "Empty");
+          .eq(`${itemSlotType.slot}`, "Empty");
 
         if (armorCheck.length > 0 && slotCheck.length > 0) {
           console.log("equipping armor");
