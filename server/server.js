@@ -64,11 +64,30 @@ io.on("connection", (socket) => {
       } else if (command.toLowerCase() == "look") {
         io.emit("look check");
       } else if (command.toLowerCase().startsWith("equip")) {
-        io.emit("equip item");
+        // Extract the item name from the command
+        const itemName = command.slice(6); // remove 'equip ' from the command
+        console.log("Equip command received from client for item:", itemName);
+        // Then emit the itemName to the client
+        io.emit("equip item", {
+          type: "system",
+          message: `${itemName}`,
+        });
       } else if (command.toLowerCase().startsWith("unequip")) {
-        io.emit("unequip item");
+        // Extract the item name from the command
+        const itemName = command.slice(8); // remove 'unequip ' from the command
+        console.log("Equip command received from client for item:", itemName);
+        // Then emit the itemName to the client
+        io.emit("unequip item", {
+          type: "system",
+          message: `${itemName}`,
+        });
       } else if (command.toLowerCase().startsWith("drop")) {
         io.emit("drop item");
+      } else if (
+        command.toLowerCase().startsWith("pickup") ||
+        command.toLowerCase().startsWith("get")
+      ) {
+        io.emit("pickup item");
       } else if (
         command.toLowerCase().startsWith("attack") ||
         command.toLowerCase().startsWith("kill")

@@ -4,7 +4,6 @@ import supabase from "../utils/supabase";
 import { getUser, setCharacter, charCheck } from "./utils/CharacterUtils";
 import { title } from "./AsciiArt";
 import backgroundImage from "../public/space.jpg";
-import Image from "next/Image";
 
 let socket;
 let currUser;
@@ -49,7 +48,7 @@ export default function Home() {
       ]);
     });
 
-    // Character Check
+    // Character Check - Title - and initial Look call
     socket.on("character check", async () => {
       console.log("character check");
       await getUser();
@@ -59,27 +58,39 @@ export default function Home() {
         ...prevTerminal,
         { type: "global", message: title }, // updated line
       ]);
+      socket.emit("game command", "look");
     });
 
     // System Command Event Listener functions
     socket.on("inventory check", () => {
       getUser().then(async (result) => {
         currUser = result;
+
+        const { data: userInventory, userInventoryError } = await supabase
+          .from("Inventory")
+          .select()
+          .eq("uid", currUser.id);
+
         const { data: inventory, inventoryError } = await supabase
           .from("Equipment")
           .select()
           .eq("uid", currUser.id);
         let equipm = inventory[0];
         let invList = `
-          You are currently wearing:
-          Head: ${equipm.head}
-          Neck: ${equipm.neck}
-          Chest: ${equipm.chest}
-          Back: ${equipm.back}
-          Arms: ${equipm.arms}
-          Hands: ${equipm.hands}
-          Waist: ${equipm.waist}
-          `;
+  You are currently wearing:
+  Head: ${equipm.head}
+  Neck: ${equipm.neck}
+  Chest: ${equipm.chest}
+  Back: ${equipm.back}
+  Arms: ${equipm.arms}
+  Waist: ${equipm.waist}
+  Hands: ${equipm.hands}
+  Feet: ${equipm.feet}
+
+  Your backpack contains:
+  ${userInventory.map((item) => `${item.quantity} x ${item.name}\n`).join("")}
+  `;
+
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           { type: "system", message: invList }, // updated line
@@ -157,9 +168,150 @@ export default function Home() {
         ]);
       });
     });
-    socket.on("equip item", () => {});
-    socket.on("unequip item", () => {});
+    socket.on("equip item", (itemName) => {
+      let itemNameMessage = itemName.message;
+      let itemNameCapitalized = itemNameMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: equipableItem, equipableItemError } = await supabase
+          .from("Inventory")
+          .select()
+          .eq("uid", currUser.id)
+          .eq("name", `${itemNameCapitalized}`);
+        let equippedItem = equipableItem[0];
+        console.log(equippedItem);
+        const { data: weaponCheck, weaponError } = await supabase
+          .from("Weapons")
+          .select()
+          .eq("name", `${itemNameCapitalized}`);
+        console.log(weaponCheck.length);
+
+        const { data: armorCheck, armorError } = await supabase
+          .from("Armor")
+          .select()
+          .eq("name", `${itemNameCapitalized}`);
+        console.log(armorCheck.length);
+
+        const { data: slotCheck, slotCheckError } = await supabase
+          .from("Equipment")
+          .select()
+          .eq(`${armorCheck[0].slot}`, "Empty");
+
+        if (armorCheck.length > 0 && slotCheck.length > 0) {
+          console.log("equipping armor");
+          const { data: equipableItem, locationError } = await supabase
+            .from("Equipment")
+            .update({ [`${armorCheck[0].slot}`]: `${itemNameCapitalized}` })
+            .eq("uid", currUser.id);
+
+          const { data: addInvItem, error } = await supabase
+            .from("Inventory")
+            .delete()
+            .eq("uid", currUser.id)
+            .eq("name", armorCheck[0].name);
+
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You equipped ${itemNameCapitalized}`,
+            }, // updated line
+          ]);
+        } else if (weaponCheck.length > 0 && slotCheck.length) {
+          console.log("equpping weapon");
+          const { data: equipableItem, locationError } = await supabase
+            .from("Equipment")
+            .update({
+              [`${weaponCheck[0].slot}`]: `${itemNameCapitalized}`,
+            })
+            .eq("uid", currUser.id);
+
+          const { data: deleteInvItem, error } = await supabase
+            .from("Inventory")
+            .delete()
+            .eq("uid", currUser.id)
+            .eq("name", weaponCheck[0].name);
+
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You equipped ${itemNameCapitalized}`,
+            }, // updated line
+          ]);
+        }
+      });
+    });
+    socket.on("unequip item", (itemName) => {
+      let itemNameMessage = itemName.message;
+      let itemNameCapitalized = itemNameMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: weaponCheck, weaponError } = await supabase
+          .from("Weapons")
+          .select()
+          .eq("name", `${itemNameCapitalized}`);
+        console.log(weaponCheck.length);
+
+        const { data: armorCheck, armorError } = await supabase
+          .from("Armor")
+          .select()
+          .eq("name", `${itemNameCapitalized}`);
+        console.log(armorCheck.length);
+
+        if (armorCheck.length > 0) {
+          const { data: equipableItem, locationError } = await supabase
+            .from("Equipment")
+            .update({ [`${armorCheck[0].slot}`]: "Empty" })
+            .eq("uid", currUser.id);
+
+          const { data: addInvItem, error } = await supabase
+            .from("Inventory")
+            .insert({
+              uid: currUser.id,
+              name: armorCheck[0].name,
+              quantity: 1,
+            });
+
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You unequipped ${itemNameCapitalized}`,
+            }, // updated line
+          ]);
+        } else if (weaponCheck.length > 0) {
+          const { data: equipableItem, locationError } = await supabase
+            .from("Equipment")
+            .update({ [`${weaponCheck[0].slot}`]: "Empty" })
+            .eq("uid", currUser.id);
+
+          const { data: addInvItem, error } = await supabase
+            .from("Inventory")
+            .insert({
+              uid: currUser.id,
+              name: weaponCheck[0].name,
+              quantity: 1,
+            });
+
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You unequipped ${itemName.message}` }, // updated line
+          ]);
+        }
+      });
+    });
     socket.on("drop item", () => {});
+    socket.on("pickup item", () => {});
     socket.on("attack check", () => {});
     socket.on("yield check", () => {});
     socket.on("use check", () => {});
