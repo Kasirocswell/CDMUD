@@ -77,17 +77,25 @@ export default function Home() {
           .eq("uid", currUser.id);
         let equipm = inventory[0];
         let invList = `
+  Weapons:
+
+  Right Hand: ${equipm.right_hand}
+  Left Hand: ${equipm.left_hand}
+
   You are currently wearing:
+
   Head: ${equipm.head}
   Neck: ${equipm.neck}
   Chest: ${equipm.chest}
   Back: ${equipm.back}
   Arms: ${equipm.arms}
-  Waist: ${equipm.waist}
   Hands: ${equipm.hands}
+  Waist: ${equipm.waist}
+  Legs: ${equipm.legs}
   Feet: ${equipm.feet}
 
   Your backpack contains:
+
   ${userInventory.map((item) => `${item.quantity} x ${item.name}\n`).join("")}
   `;
 
@@ -326,7 +334,38 @@ export default function Home() {
     socket.on("use check", () => {});
     socket.on("loot check", () => {});
     socket.on("mount check", () => {});
-    socket.on("move north", () => {});
+    socket.on("move north", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: _currentLocation, locationError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id);
+        let currentLocation = _currentLocation[0].current_location;
+        console.log(currentLocation);
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", currentLocation);
+        let roomDetails = currentRoom[0];
+        console.log(roomDetails);
+        let roomName = `
+          ${roomDetails.room_name}
+          `;
+        let roomDescription = `
+          ${roomDetails.description}
+        `;
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: `${roomName} 
+                      ${roomDescription}
+                                      `,
+          }, // updated line
+        ]);
+      });
+    });
     socket.on("move south", () => {});
     socket.on("move east", () => {});
     socket.on("move west", () => {});

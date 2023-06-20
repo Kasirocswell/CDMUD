@@ -105,7 +105,15 @@ io.on("connection", (socket) => {
         command.toLowerCase() == "north" ||
         command.toLowerCase() == "n"
       ) {
-        io.emit("move north");
+        console.log(
+          "move command received from client for direction:",
+          command
+        );
+        // Then emit the itemName to the client
+        io.emit("move north", {
+          type: "system",
+          message: `${command}`,
+        });
       } else if (
         command.toLowerCase() == "south" ||
         command.toLowerCase() == "s"

@@ -33,10 +33,6 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
       .from("Attributes")
       .insert([{ uid: data.user.id }]);
 
-    const { vehiclesData, error: vehiclesError } = await supabase
-      .from("Vehicles")
-      .insert([{ uid: data.user.id }]);
-
     if (error) {
       console.log(error);
     } else {
