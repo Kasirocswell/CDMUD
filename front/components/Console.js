@@ -77,25 +77,17 @@ export default function Home() {
           .eq("uid", currUser.id);
         let equipm = inventory[0];
         let invList = `
-  Weapons:
-
-  Right Hand: ${equipm.right_hand}
-  Left Hand: ${equipm.left_hand}
-
   You are currently wearing:
-
   Head: ${equipm.head}
   Neck: ${equipm.neck}
   Chest: ${equipm.chest}
   Back: ${equipm.back}
   Arms: ${equipm.arms}
-  Hands: ${equipm.hands}
   Waist: ${equipm.waist}
-  Legs: ${equipm.legs}
+  Hands: ${equipm.hands}
   Feet: ${equipm.feet}
 
   Your backpack contains:
-
   ${userInventory.map((item) => `${item.quantity} x ${item.name}\n`).join("")}
   `;
 
@@ -334,7 +326,7 @@ export default function Home() {
     socket.on("use check", () => {});
     socket.on("loot check", () => {});
     socket.on("mount check", () => {});
-    socket.on("move north", () => {
+    socket.on("move north", async () => {
       getUser().then(async (result) => {
         currUser = result;
         const { data: _currentLocation, locationError } = await supabase
@@ -342,33 +334,110 @@ export default function Home() {
           .select()
           .eq("uid", currUser.id);
         let currentLocation = _currentLocation[0].current_location;
-        console.log(currentLocation);
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
           .eq("room_name", currentLocation);
         let roomDetails = currentRoom[0];
         console.log(roomDetails);
-        let roomName = `
-          ${roomDetails.room_name}
-          `;
-        let roomDescription = `
-          ${roomDetails.description}
-        `;
-        setTerminal((prevTerminal) => [
-          ...prevTerminal,
-          {
-            type: "system",
-            message: `${roomName} 
-                      ${roomDescription}
-                                      `,
-          }, // updated line
-        ]);
+        if (roomDetails.north !== "None") {
+          const { data: updateMoveNorth, locationError } = await supabase
+            .from("Char")
+            .update({ ["current_location"]: `${roomDetails.north}` })
+            .eq("uid", currUser.id);
+          await socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go North!" }, // updated line
+          ]);
+        }
       });
     });
-    socket.on("move south", () => {});
-    socket.on("move east", () => {});
-    socket.on("move west", () => {});
+    socket.on("move south", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: _currentLocation, locationError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id);
+        let currentLocation = _currentLocation[0].current_location;
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", currentLocation);
+        let roomDetails = currentRoom[0];
+        console.log(roomDetails);
+        if (roomDetails.south !== "None") {
+          const { data: updateMoveSouth, locationError } = await supabase
+            .from("Char")
+            .update({ ["current_location"]: `${roomDetails.south}` })
+            .eq("uid", currUser.id);
+          await socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go South!" }, // updated line
+          ]);
+        }
+      });
+    });
+    socket.on("move east", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: _currentLocation, locationError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id);
+        let currentLocation = _currentLocation[0].current_location;
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", currentLocation);
+        let roomDetails = currentRoom[0];
+        console.log(roomDetails);
+        if (roomDetails.east !== "None") {
+          const { data: updateMoveEast, locationError } = await supabase
+            .from("Char")
+            .update({ ["current_location"]: `${roomDetails.east}` })
+            .eq("uid", currUser.id);
+          await socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go East!" }, // updated line
+          ]);
+        }
+      });
+    });
+    socket.on("move west", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: _currentLocation, locationError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id);
+        let currentLocation = _currentLocation[0].current_location;
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", currentLocation);
+        let roomDetails = currentRoom[0];
+        console.log(roomDetails);
+        if (roomDetails.north !== "None") {
+          const { data: updateMoveWest, locationError } = await supabase
+            .from("Char")
+            .update({ ["current_location"]: `${roomDetails.west}` })
+            .eq("uid", currUser.id);
+          await socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go West!" }, // updated line
+          ]);
+        }
+      });
+    });
     socket.on("enter check", () => {});
     socket.on("exit check", () => {});
 
