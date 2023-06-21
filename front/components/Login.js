@@ -1,8 +1,6 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
-import { getUser, setUser } from "./utils/CharacterUtils";
-import backgroundImage from "../public/space.jpg";
 
 const Login = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
@@ -11,12 +9,10 @@ const Login = ({ LoggedIn, tabsToggle }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     // handle login
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: user, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
-
-    // const { data2, error2 } = await supabase.from;
 
     if (error) {
       console.log("Error Logging In:", error.message);
@@ -24,6 +20,46 @@ const Login = ({ LoggedIn, tabsToggle }) => {
     }
 
     console.log("User Logged In");
+    const { data: characterData, charDataError } = await supabase
+      .from("Char")
+      .select()
+      .eq("uid", user.id)
+      .single();
+
+    console.log("User Logged In");
+    const { data: equipmentData, eqDataError } = await supabase
+      .from("Char")
+      .select()
+      .eq("uid", user.id)
+      .single();
+
+    CustomState.dispatch({
+      userId: user.id,
+      payload: {
+        character: {
+          name: `${characterData.char_name}`,
+          race: `${characterData.char_race}`,
+          level: `${characterData.char_level}`,
+          xp: `${characterData.char_xp}`,
+          current_location: `${characterData.current_location}`,
+        },
+        equipment: {
+          right_hand: `${equipmentData.right_hand}`,
+          left_hand: `${equipmentData.left_hand}`,
+          head: `${equipmentData.head}`,
+          neck: `${equipmentData.neck}`,
+          chest: `${equipmentData.chest}`,
+          back: `${equipmentData.back}`,
+          arms: `${equipmentData.arms}`,
+          hands: `${equipmentData.hands}`,
+          waist: `${equipmentData.waist}`,
+          legs: `${equipmentData.legs}`,
+          feet: `${equipmentData.feet}`,
+        },
+        inventory: {},
+        vehicles: {},
+      },
+    });
 
     LoggedIn();
   };

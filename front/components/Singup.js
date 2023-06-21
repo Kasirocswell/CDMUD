@@ -1,42 +1,123 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
+import { createCharacter } from "./utils/CharacterUtils";
+import { getUser } from "./utils/CharacterUtils";
+import CustomState from "../store/CustomState";
 
 const Signup = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  let currUser;
+
+  const createCharacter = async () => {
+    let characterName = window.prompt("Enter your character name: ", "");
+    const { data: char_name, error } = await supabase
+      .from("Char")
+      .update({ char_name: characterName })
+      .match({ uid: currUser.id });
+
+    const setRace = raceSelector();
+
+    const { selectedRace, error2 } = await supabase
+      .from("Char")
+      .update({ char_race: setRace })
+      .match({ uid: currUser.id });
+
+    const { startingPoint, error4 } = await supabase
+      .from("Char")
+      .update({ current_location: "Holding Cells" })
+      .match({ uid: currUser.id });
+
+    const { data: characterData, dataError } = await supabase
+      .from("Char")
+      .select()
+      .eq("uid", currUser.id)
+      .single();
+
+    const { data: equipmentData, equipmentDataError } = await supabase
+      .from("Equipment")
+      .select()
+      .eq("uid", currUser.id)
+      .single();
+
+    CustomState.dispatch({
+      userId: currUser.id,
+      payload: {
+        character: {
+          name: `${characterData.char_name}`,
+          race: `${characterData.char_race}`,
+          level: `${characterData.char_level}`,
+          xp: `${characterData.char_xp}`,
+          current_location: `${characterData.current_location}`,
+        },
+        equipment: {
+          right_hand: `${equipmentData.right_hand}`,
+          left_hand: `${equipmentData.left_hand}`,
+          head: `${equipmentData.head}`,
+          neck: `${equipmentData.neck}`,
+          chest: `${equipmentData.chest}`,
+          back: `${equipmentData.back}`,
+          arms: `${equipmentData.arms}`,
+          hands: `${equipmentData.hands}`,
+          waist: `${equipmentData.waist}`,
+          legs: `${equipmentData.legs}`,
+          feet: `${equipmentData.feet}`,
+        },
+        inventory: {},
+        vehicles: {},
+      },
+    });
+  };
+
+  const raceSelector = () => {
+    let raceSelection = window.prompt("Enter your character Race(1-4): ", "");
+    if (raceSelection == 1) {
+      return "Human";
+    } else if (raceSelection == 2) {
+      return "Draconian";
+    } else if (raceSelection == 3) {
+      return "Ventari";
+    } else if (raceSelection == 4) {
+      return "Dosha";
+    } else {
+      raceSelector();
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const { user, error } = await supabase.auth.signUp({
+    const { data: user, error } = await supabase.auth.signUp({
       email: email,
       password: password,
     });
-
-    const { data, session, err } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
-
+    currUser = user.user;
+    console.log(currUser);
     // Initialize character
 
-    const { userData, error: insertError } = await supabase
+    const { data: userData, error: insertError } = await supabase
       .from("Char")
-      .insert([{ uid: data.user.id }]);
+      .insert([{ uid: user.user.id }]);
 
-    const { equipmentData, error: equipmentError } = await supabase
+    const { data: equipmentData, error: equipmentError } = await supabase
       .from("Equipment")
-      .insert([{ uid: data.user.id }]);
+      .insert([{ uid: user.user.id }]);
 
-    const { attributesData, error: attributesError } = await supabase
+    const { data: attributesData, error: attributesError } = await supabase
       .from("Attributes")
-      .insert([{ uid: data.user.id }]);
+      .insert([{ uid: user.user.id }]);
+
+    const { data: startingPoint, error4 } = await supabase
+      .from("Char")
+      .update({ current_location: "Holding Cells" })
+      .match({ uid: user.user.id });
 
     if (error) {
       console.log(error);
     } else {
       console.log("Success! Check your email for a confirmation link.");
+      createCharacter();
       LoggedIn();
     }
   };

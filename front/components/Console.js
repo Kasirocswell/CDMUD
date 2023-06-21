@@ -4,6 +4,7 @@ import supabase from "../utils/supabase";
 import { getUser, setCharacter, charCheck } from "./utils/CharacterUtils";
 import { title } from "./AsciiArt";
 import backgroundImage from "../public/space.jpg";
+import CustomState from "../store/CustomState";
 
 let socket;
 let currUser;
@@ -51,22 +52,6 @@ export default function Home() {
     // Character Check - Title - and initial Look call
     socket.on("character check", async () => {
       console.log("character check");
-      await getUser().then(async (result) => {
-        currUser = result;
-        const { data: character, characterError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let current_location = character[0].current_location;
-        sessionStorage.setItem("current_location", current_location);
-      });
-      await charCheck();
-      await setCharacter();
-      setTerminal((prevTerminal) => [
-        ...prevTerminal,
-        { type: "global", message: title }, // updated line
-      ]);
-      socket.emit("game command", "look");
     });
 
     // System Command Event Listener functions
@@ -478,7 +463,7 @@ export default function Home() {
     });
   };
 
-  saveLocation();
+  // saveLocation();
 
   // Scroll to bottom every time terminal updates
   useEffect(() => {
