@@ -1,8 +1,6 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
-import { createCharacter } from "./utils/CharacterUtils";
-import { getUser } from "./utils/CharacterUtils";
 import CustomState from "../store/CustomState";
 
 const Signup = ({ LoggedIn, tabsToggle }) => {

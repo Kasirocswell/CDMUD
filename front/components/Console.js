@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import supabase from "../utils/supabase";
-import { getUser, setCharacter, charCheck } from "./utils/CharacterUtils";
 import { title } from "./AsciiArt";
 import backgroundImage from "../public/space.jpg";
 import CustomState from "../store/CustomState";
