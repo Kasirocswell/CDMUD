@@ -5,6 +5,7 @@ import supabase from "../utils/supabase";
 const Login = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  let currUser;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -13,6 +14,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
       email: email,
       password: password,
     });
+    currUser = user.user;
 
     if (error) {
       console.log("Error Logging In:", error.message);
@@ -23,18 +25,18 @@ const Login = ({ LoggedIn, tabsToggle }) => {
     const { data: characterData, charDataError } = await supabase
       .from("Char")
       .select()
-      .eq("uid", user.id)
+      .eq("uid", currUser.id)
       .single();
 
     console.log("User Logged In");
     const { data: equipmentData, eqDataError } = await supabase
       .from("Char")
       .select()
-      .eq("uid", user.id)
+      .eq("uid", currUser.id)
       .single();
 
     CustomState.dispatch({
-      userId: user.id,
+      userId: currUser.id,
       payload: {
         character: {
           name: `${characterData.char_name}`,
