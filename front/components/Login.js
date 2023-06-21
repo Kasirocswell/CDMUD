@@ -1,6 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
+import CustomState from "../store/CustomState";
 
 const Login = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");

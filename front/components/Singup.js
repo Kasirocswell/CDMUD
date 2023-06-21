@@ -17,12 +17,12 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
 
     const setRace = raceSelector();
 
-    const { selectedRace, error2 } = await supabase
+    const { data: selectedRace, error2 } = await supabase
       .from("Char")
       .update({ char_race: setRace })
       .match({ uid: currUser.id });
 
-    const { startingPoint, error4 } = await supabase
+    const { data: startingPoint, error4 } = await supabase
       .from("Char")
       .update({ current_location: "Holding Cells" })
       .match({ uid: currUser.id });
