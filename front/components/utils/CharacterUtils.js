@@ -50,7 +50,6 @@ export const createCharacter = async () => {
     .select()
     .eq("uid", currUser.id);
   await sessionStorage.setItem("handle", characterName);
-  await console.log("handle: " + sessionStorage.getItem("handle"));
 };
 
 // Get current user function
@@ -58,14 +57,12 @@ export const getUser = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log(user);
   setUser(user);
   return user;
 };
 
 export const setUser = (user) => {
   currUser = user;
-  console.log(currUser);
 };
 
 export const setCharacter = async () => {
@@ -75,7 +72,6 @@ export const setCharacter = async () => {
     .eq("uid", currUser.id);
   console.log("Character Loaded");
   character = characterLoading.data[0];
-  console.log(character);
   if (character.char_name === null || undefined) {
     createCharacter();
   } else {
@@ -86,6 +82,4 @@ export const setCharacter = async () => {
 //Character Check update
 export const charCheck = async () => {
   const { data, error } = await supabase.from("Char").select("*");
-  console.log(data);
-  console.log(currUser);
 };

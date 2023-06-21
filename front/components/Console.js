@@ -51,7 +51,15 @@ export default function Home() {
     // Character Check - Title - and initial Look call
     socket.on("character check", async () => {
       console.log("character check");
-      await getUser();
+      await getUser().then(async (result) => {
+        currUser = result;
+        const { data: character, characterError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id);
+        let current_location = character[0].current_location;
+        sessionStorage.setItem("current_location", current_location);
+      });
       await charCheck();
       await setCharacter();
       setTerminal((prevTerminal) => [
@@ -101,6 +109,7 @@ export default function Home() {
     socket.on("status check", () => {
       getUser().then(async (result) => {
         currUser = result;
+        let current_location = sessionStorage.getItem("current_location");
         const { data: char, charError } = await supabase
           .from("Char")
           .select()
@@ -112,7 +121,7 @@ export default function Home() {
         Race: ${character.char_race}
         Level: ${character.char_level}
         XP: ${character.char_xp}
-        Location: ${character.current_location}
+        Location: ${current_location}
         `;
 
         setTerminal((prevTerminal) => [
@@ -139,18 +148,14 @@ export default function Home() {
     socket.on("look check", () => {
       getUser().then(async (result) => {
         currUser = result;
-        const { data: _currentLocation, locationError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let currentLocation = _currentLocation[0].current_location;
+
+        let currentLocation = sessionStorage.getItem("current_location");
         console.log(currentLocation);
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
           .eq("room_name", currentLocation);
         let roomDetails = currentRoom[0];
-        console.log(roomDetails);
         let roomName = `
           ${roomDetails.room_name}
           `;
@@ -183,18 +188,15 @@ export default function Home() {
           .eq("uid", currUser.id)
           .eq("name", `${itemNameCapitalized}`);
         let equippedItem = equipableItem[0];
-        console.log(equippedItem);
         const { data: weaponCheck, weaponError } = await supabase
           .from("Weapons")
           .select()
           .eq("name", `${itemNameCapitalized}`);
-        console.log(weaponCheck.length);
 
         const { data: armorCheck, armorError } = await supabase
           .from("Armor")
           .select()
           .eq("name", `${itemNameCapitalized}`);
-        console.log(armorCheck.length);
 
         let itemSlotType;
         if (armorCheck.length > 0) {
@@ -231,7 +233,6 @@ export default function Home() {
             }, // updated line
           ]);
         } else if (weaponCheck.length > 0 && slotCheck.length) {
-          console.log("equpping weapon");
           const { data: equipableItem, locationError } = await supabase
             .from("Equipment")
             .update({
@@ -269,13 +270,11 @@ export default function Home() {
           .from("Weapons")
           .select()
           .eq("name", `${itemNameCapitalized}`);
-        console.log(weaponCheck.length);
 
         const { data: armorCheck, armorError } = await supabase
           .from("Armor")
           .select()
           .eq("name", `${itemNameCapitalized}`);
-        console.log(armorCheck.length);
 
         if (armorCheck.length > 0) {
           const { data: equipableItem, locationError } = await supabase
@@ -329,27 +328,19 @@ export default function Home() {
     socket.on("move north", async () => {
       getUser().then(async (result) => {
         currUser = result;
-        const { data: _currentLocation, locationError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let currentLocation = _currentLocation[0].current_location;
+        let current_location = sessionStorage.getItem("current_location");
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
-          .eq("room_name", currentLocation);
+          .eq("room_name", current_location);
         let roomDetails = currentRoom[0];
-        console.log(roomDetails);
         if (roomDetails.north !== "None") {
-          const { data: updateMoveNorth, locationError } = await supabase
-            .from("Char")
-            .update({ ["current_location"]: `${roomDetails.north}` })
-            .eq("uid", currUser.id);
-          await socket.emit("game command", "look");
+          sessionStorage.setItem("current_location", `${roomDetails.north}`);
+          socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: "You cannot go North!" }, // updated line
+            { type: "system", message: "You cannot go that way." }, // updated line
           ]);
         }
       });
@@ -357,27 +348,19 @@ export default function Home() {
     socket.on("move south", () => {
       getUser().then(async (result) => {
         currUser = result;
-        const { data: _currentLocation, locationError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let currentLocation = _currentLocation[0].current_location;
+        let current_location = sessionStorage.getItem("current_location");
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
-          .eq("room_name", currentLocation);
+          .eq("room_name", current_location);
         let roomDetails = currentRoom[0];
-        console.log(roomDetails);
         if (roomDetails.south !== "None") {
-          const { data: updateMoveSouth, locationError } = await supabase
-            .from("Char")
-            .update({ ["current_location"]: `${roomDetails.south}` })
-            .eq("uid", currUser.id);
-          await socket.emit("game command", "look");
+          sessionStorage.setItem("current_location", `${roomDetails.south}`);
+          socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: "You cannot go South!" }, // updated line
+            { type: "system", message: "You cannot go that way." }, // updated line
           ]);
         }
       });
@@ -385,27 +368,19 @@ export default function Home() {
     socket.on("move east", () => {
       getUser().then(async (result) => {
         currUser = result;
-        const { data: _currentLocation, locationError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let currentLocation = _currentLocation[0].current_location;
+        let current_location = sessionStorage.getItem("current_location");
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
-          .eq("room_name", currentLocation);
+          .eq("room_name", current_location);
         let roomDetails = currentRoom[0];
-        console.log(roomDetails);
         if (roomDetails.east !== "None") {
-          const { data: updateMoveEast, locationError } = await supabase
-            .from("Char")
-            .update({ ["current_location"]: `${roomDetails.east}` })
-            .eq("uid", currUser.id);
-          await socket.emit("game command", "look");
+          sessionStorage.setItem("current_location", `${roomDetails.east}`);
+          socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: "You cannot go East!" }, // updated line
+            { type: "system", message: "You cannot go that way." }, // updated line
           ]);
         }
       });
@@ -413,38 +388,97 @@ export default function Home() {
     socket.on("move west", () => {
       getUser().then(async (result) => {
         currUser = result;
-        const { data: _currentLocation, locationError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        let currentLocation = _currentLocation[0].current_location;
+        let current_location = sessionStorage.getItem("current_location");
         const { data: currentRoom, roomError } = await supabase
           .from("Rooms")
           .select()
-          .eq("room_name", currentLocation);
+          .eq("room_name", current_location);
         let roomDetails = currentRoom[0];
-        console.log(roomDetails);
-        if (roomDetails.north !== "None") {
-          const { data: updateMoveWest, locationError } = await supabase
-            .from("Char")
-            .update({ ["current_location"]: `${roomDetails.west}` })
-            .eq("uid", currUser.id);
-          await socket.emit("game command", "look");
+        if (roomDetails.west !== "None") {
+          sessionStorage.setItem("current_location", `${roomDetails.west}`);
+          socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: "You cannot go West!" }, // updated line
+            { type: "system", message: "You cannot go that way." }, // updated line
           ]);
         }
       });
     });
-    socket.on("enter check", () => {});
-    socket.on("exit check", () => {});
+    socket.on("enter check", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        let current_location = sessionStorage.getItem("current_location");
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", current_location);
+        let roomDetails = currentRoom[0];
+        if (roomDetails.enter !== "None") {
+          sessionStorage.setItem("current_location", `${roomDetails.enter}`);
+          socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go that way." }, // updated line
+          ]);
+        }
+      });
+    });
+    socket.on("exit check", () => {
+      getUser().then(async (result) => {
+        currUser = result;
+        let current_location = sessionStorage.getItem("current_location");
+        const { data: currentRoom, roomError } = await supabase
+          .from("Rooms")
+          .select()
+          .eq("room_name", current_location);
+        let roomDetails = currentRoom[0];
+        if (roomDetails.exit !== "None") {
+          sessionStorage.setItem("current_location", `${roomDetails.exit}`);
+          socket.emit("game command", "look");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: "You cannot go that way." }, // updated line
+          ]);
+        }
+      });
+    });
 
     return () => {
       socket.disconnect();
     };
   }, []);
+
+  const saveLocation = () => {
+    getUser().then(async (result) => {
+      currUser = result;
+      let current_location = sessionStorage.getItem("current_location");
+      const { data: currentLocationData, locationDataError } = await supabase
+        .from("Char")
+        .select()
+        .eq("uid", currUser.id);
+      let currentDbLocation = currentLocationData[0].current_location;
+      console.log(current_location);
+      console.log(currentDbLocation);
+      if (currentDbLocation != current_location) {
+        const { data: saveLocationData, locationError } = await supabase
+          .from("Char")
+          .update({
+            [`current_location`]: `${current_location}`,
+          })
+          .eq("uid", currUser.id);
+
+        console.log("Location Saved");
+        setTimeout(saveLocation, 65000);
+      } else {
+        console.log(`player hasn't moved.`);
+      }
+    });
+  };
+
+  saveLocation();
 
   // Scroll to bottom every time terminal updates
   useEffect(() => {
