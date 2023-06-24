@@ -31,36 +31,42 @@ const Login = ({ LoggedIn, tabsToggle }) => {
 
     console.log("User Logged In");
     const { data: equipmentData, eqDataError } = await supabase
-      .from("Char")
+      .from("Equipment")
       .select()
       .eq("uid", currUser.id)
       .single();
 
+    console.log("equipment data");
+    console.log(equipmentData);
+
     CustomState.dispatch({
-      userId: currUser.id,
+      type: "UPDATE_USER",
       payload: {
-        character: {
-          name: `${characterData.char_name}`,
-          race: `${characterData.char_race}`,
-          level: `${characterData.char_level}`,
-          xp: `${characterData.char_xp}`,
-          current_location: `${characterData.current_location}`,
+        userId: currUser.id,
+        data: {
+          character: {
+            name: `${characterData.char_name}`,
+            race: `${characterData.char_race}`,
+            level: `${characterData.char_level}`,
+            xp: `${characterData.char_xp}`,
+            current_location: `${characterData.current_location}`,
+          },
+          equipment: {
+            right_hand: `${equipmentData.right_hand}`,
+            left_hand: `${equipmentData.left_hand}`,
+            head: `${equipmentData.head}`,
+            neck: `${equipmentData.neck}`,
+            chest: `${equipmentData.chest}`,
+            back: `${equipmentData.back}`,
+            arms: `${equipmentData.arms}`,
+            hands: `${equipmentData.hands}`,
+            waist: `${equipmentData.waist}`,
+            legs: `${equipmentData.legs}`,
+            feet: `${equipmentData.feet}`,
+          },
+          inventory: [],
+          vehicles: {},
         },
-        equipment: {
-          right_hand: `${equipmentData.right_hand}`,
-          left_hand: `${equipmentData.left_hand}`,
-          head: `${equipmentData.head}`,
-          neck: `${equipmentData.neck}`,
-          chest: `${equipmentData.chest}`,
-          back: `${equipmentData.back}`,
-          arms: `${equipmentData.arms}`,
-          hands: `${equipmentData.hands}`,
-          waist: `${equipmentData.waist}`,
-          legs: `${equipmentData.legs}`,
-          feet: `${equipmentData.feet}`,
-        },
-        inventory: {},
-        vehicles: {},
       },
     });
 

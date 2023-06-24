@@ -1,7 +1,7 @@
-// CustomState.js
-
 let state = {
   users: {},
+  inventory: {},
+  items: {},
 };
 
 let listeners = [];
@@ -11,20 +11,18 @@ const CustomState = {
 
   dispatch: (action) => {
     if (typeof action === "function") {
-      // if the action is a function, execute it
       action(CustomState.dispatch, CustomState.getState);
     } else if (typeof action === "object" && action !== null) {
-      // if the action is an object, treat it as a state change
-      // check if action has a user ID
-      if (action.userId) {
-        // update or initialize the state for the specified user
-        const userState = state.users[action.userId] || {};
-        state.users[action.userId] = { ...userState, ...action.payload };
+      if (action.type === "UPDATE_USER") {
+        const { userId, data } = action.payload;
+        const userState = state.users[userId] || {};
+        state.users[userId] = { ...userState, ...data };
+      } else if (action.type === "SET_TABLE_DATA") {
+        const { tableName, data } = action.payload;
+        state[tableName] = data;
       } else {
-        // if no user ID is provided, just merge action into state
         state = { ...state, ...action };
       }
-
       listeners.forEach((listener) => listener(state));
     }
   },
@@ -35,6 +33,23 @@ const CustomState = {
       listeners = listeners.filter((l) => l !== listener);
     };
     return unsubscribe;
+  },
+
+  printState: () => {
+    console.log("current state");
+    console.log(state);
+  },
+
+  getRoomState: () => {
+    return state?.Rooms || {};
+  },
+
+  getWeaponState: () => {
+    return state?.Weapons || {};
+  },
+
+  getArmorState: () => {
+    return state?.Armor || {};
   },
 
   getUserState: (userId) => {

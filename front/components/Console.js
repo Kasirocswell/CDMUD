@@ -6,25 +6,108 @@ import backgroundImage from "../public/space.jpg";
 import CustomState from "../store/CustomState";
 
 let socket;
-let currUser;
 
 export default function Home() {
   const [message, setMessage] = useState("");
+  const [getData, setData] = useState("");
   const [terminal, setTerminal] = useState([]);
   const chatEndRef = useRef(null);
+
+  const getUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  };
+
+  const setMap = async () => {
+    const { data, error } = await supabase.from("Rooms").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Rooms", data },
+      });
+    }
+  };
+
+  const setWeapons = async () => {
+    const { data, error } = await supabase.from("Weapons").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Weapons", data },
+      });
+    }
+  };
+
+  const setArmor = async () => {
+    const { data, error } = await supabase.from("Armor").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Armor", data },
+      });
+    }
+  };
+  setMap();
+  setWeapons();
+  setArmor();
+  let rooms = CustomState.getRoomState();
+  console.log("logging rooms");
+  console.log(rooms);
+  let weapons = CustomState.getWeaponState();
+  let armor = CustomState.getArmorState();
+  const dataCheck = () => {
+    if (rooms == null || rooms == undefined || typeof rooms != "array") {
+      setMap();
+      rooms = CustomState.getRoomState();
+      console.log("Map Set");
+      CustomState.printState();
+    }
+
+    if (weapons == null || weapons == undefined) {
+      setWeapons();
+      weapons = CustomState.getWeaponState();
+      console.log("Weapons Set");
+      CustomState.printState();
+    }
+
+    if (armor == null || armor == undefined) {
+      setArmor();
+      armor = CustomState.getArmorState();
+      console.log("Armor Set");
+      CustomState.printState();
+    }
+  };
+  dataCheck();
 
   // Listening Events UseEffect
   useEffect(() => {
     socket = io("http://localhost:3000");
 
     socket.on("chat message", (msg) => {
-      setTerminal((prevTerminal) => [
-        ...prevTerminal,
-        {
-          type: "chat",
-          message: `${sessionStorage.getItem("handle")}: ` + msg.message,
-        }, // updated line
-      ]);
+      getUser().then((result) => {
+        console.log(result);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        console.log(local_user);
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "chat",
+            message: `${local_user.character.name}: ` + msg.message,
+          }, // updated line
+        ]);
+      });
     });
 
     socket.on("global message", (msg) => {
@@ -51,36 +134,34 @@ export default function Home() {
     // Character Check - Title - and initial Look call
     socket.on("character check", async () => {
       console.log("character check");
+      socket.emit("game command", "look");
     });
 
     // System Command Event Listener functions
     socket.on("inventory check", () => {
       getUser().then(async (result) => {
-        currUser = result;
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
 
-        const { data: userInventory, userInventoryError } = await supabase
-          .from("Inventory")
-          .select()
-          .eq("uid", currUser.id);
-
-        const { data: inventory, inventoryError } = await supabase
-          .from("Equipment")
-          .select()
-          .eq("uid", currUser.id);
-        let equipm = inventory[0];
         let invList = `
+  Weapons:
+
+  Right Hand: ${local_user.equipment.right_hand}
+  Left Hand: ${local_user.equipment.left_hand}
+
   You are currently wearing:
-  Head: ${equipm.head}
-  Neck: ${equipm.neck}
-  Chest: ${equipm.chest}
-  Back: ${equipm.back}
-  Arms: ${equipm.arms}
-  Waist: ${equipm.waist}
-  Hands: ${equipm.hands}
-  Feet: ${equipm.feet}
+
+  Head: ${local_user.equipment.head}
+  Neck: ${local_user.equipment.neck}
+  Chest: ${local_user.equipment.chest}
+  Back: ${local_user.equipment.back}
+  Arms: ${local_user.equipment.arms}
+  Waist: ${local_user.equipment.waist}
+  Hands: ${local_user.equipment.hands}
+  Feet: ${local_user.equipment.feet}
 
   Your backpack contains:
-  ${userInventory.map((item) => `${item.quantity} x ${item.name}\n`).join("")}
+  ${CustomState.getUserState(currUser.id).inventory}\n
   `;
 
         setTerminal((prevTerminal) => [
@@ -92,22 +173,15 @@ export default function Home() {
 
     socket.on("status check", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: char, charError } = await supabase
-          .from("Char")
-          .select()
-          .eq("uid", currUser.id);
-        console.log(char);
-        let character = char[0];
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
         let statsList = `
-        Name: ${character.char_name}
-        Race: ${character.char_race}
-        Level: ${character.char_level}
-        XP: ${character.char_xp}
-        Location: ${current_location}
+        Name: ${local_user.character.name}
+        Race: ${local_user.character.race}
+        Level: ${local_user.character.level}
+        XP: ${local_user.character.xp}
+        Location: ${local_user.character.current_location}
         `;
-
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           { type: "system", message: statsList }, // updated line
@@ -131,15 +205,16 @@ export default function Home() {
     });
     socket.on("look check", () => {
       getUser().then(async (result) => {
-        currUser = result;
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_room;
+        let find_current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room = room;
+          }
+        });
 
-        let currentLocation = sessionStorage.getItem("current_location");
-        console.log(currentLocation);
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", currentLocation);
-        let roomDetails = currentRoom[0];
+        let roomDetails = current_room;
         let roomName = `
           ${roomDetails.room_name}
           `;
@@ -157,6 +232,7 @@ export default function Home() {
         ]);
       });
     });
+
     socket.on("equip item", (itemName) => {
       let itemNameMessage = itemName.message;
       let itemNameCapitalized = itemNameMessage
@@ -165,50 +241,63 @@ export default function Home() {
         .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
         .join(" ");
       getUser().then(async (result) => {
-        currUser = result;
-        const { data: equipableItem, equipableItemError } = await supabase
-          .from("Inventory")
-          .select()
-          .eq("uid", currUser.id)
-          .eq("name", `${itemNameCapitalized}`);
-        let equippedItem = equipableItem[0];
-        const { data: weaponCheck, weaponError } = await supabase
-          .from("Weapons")
-          .select()
-          .eq("name", `${itemNameCapitalized}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let slot;
+        let inInventory = false;
+        let isWeapon = false;
+        let isArmor = false;
+        let inventory = [...CustomState.getUserState(currUser.id).inventory];
+        console.log("inventory data");
+        console.log(inventory);
 
-        const { data: armorCheck, armorError } = await supabase
-          .from("Armor")
-          .select()
-          .eq("name", `${itemNameCapitalized}`);
-
-        let itemSlotType;
-        if (armorCheck.length > 0) {
-          itemSlotType = armorCheck[0];
-        } else if (weaponCheck.length > 0) {
-          itemSlotType = weaponCheck[0];
-        } else {
-          console.log("item doesn't exist");
+        if (
+          CustomState.getUserState(currUser.id).inventory.includes(
+            `${itemNameCapitalized}`
+          )
+        ) {
+          inInventory = true;
         }
+        CustomState.getState().Weapons.filter((item) => {
+          if (item.name == `${itemNameCapitalized}`) {
+            isWeapon = true;
+            slot = item.slot;
+          }
+        });
 
-        const { data: slotCheck, slotCheckError } = await supabase
-          .from("Equipment")
-          .select()
-          .eq(`${itemSlotType.slot}`, "Empty");
+        CustomState.getState().Armor.filter((item) => {
+          if (item.name == `${itemNameCapitalized}`) {
+            isArmor = true;
+            slot = item.slot;
+          }
+        });
 
-        if (armorCheck.length > 0 && slotCheck.length > 0) {
-          console.log("equipping armor");
-          const { data: equipableItem, locationError } = await supabase
-            .from("Equipment")
-            .update({ [`${armorCheck[0].slot}`]: `${itemNameCapitalized}` })
-            .eq("uid", currUser.id);
-
-          const { data: addInvItem, error } = await supabase
-            .from("Inventory")
-            .delete()
-            .eq("uid", currUser.id)
-            .eq("name", armorCheck[0].name);
-
+        if (isArmor) {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                equipment: {
+                  ...local_user.equipment, // Spread the current equipment data
+                  [slot]: `${itemNameCapitalized}`, // Set right_hand to 'empty'
+                },
+              },
+            },
+          });
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                inventory:
+                  CustomState.getUserState(currUser.id).inventory -
+                  `${itemNameCapitalized}`,
+                // Set right_hand to 'empty'
+                // Append unequipped item to inventory
+              },
+            },
+          });
           setTerminal((prevTerminal) => [
             ...prevTerminal,
             {
@@ -216,20 +305,32 @@ export default function Home() {
               message: `You equipped ${itemNameCapitalized}`,
             }, // updated line
           ]);
-        } else if (weaponCheck.length > 0 && slotCheck.length) {
-          const { data: equipableItem, locationError } = await supabase
-            .from("Equipment")
-            .update({
-              [`${weaponCheck[0].slot}`]: `${itemNameCapitalized}`,
-            })
-            .eq("uid", currUser.id);
-
-          const { data: deleteInvItem, error } = await supabase
-            .from("Inventory")
-            .delete()
-            .eq("uid", currUser.id)
-            .eq("name", weaponCheck[0].name);
-
+        } else if (isWeapon) {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                equipment: {
+                  ...local_user.equipment, // Spread the current equipment data
+                  [slot]: `${itemNameCapitalized}`, // Set right_hand to 'empty'
+                },
+              },
+            },
+          });
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                inventory: CustomState.getUserState(
+                  currUser.id
+                ).inventory.replace(`${itemNameCapitalized}`, ""),
+                // Set right_hand to 'empty'
+                // Append unequipped item to inventory
+              },
+            },
+          });
           setTerminal((prevTerminal) => [
             ...prevTerminal,
             {
@@ -240,6 +341,7 @@ export default function Home() {
         }
       });
     });
+
     socket.on("unequip item", (itemName) => {
       let itemNameMessage = itemName.message;
       let itemNameCapitalized = itemNameMessage
@@ -249,31 +351,84 @@ export default function Home() {
         .join(" ");
 
       getUser().then(async (result) => {
-        currUser = result;
-        const { data: weaponCheck, weaponError } = await supabase
-          .from("Weapons")
-          .select()
-          .eq("name", `${itemNameCapitalized}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let slot;
+        let isEquipped = false;
+        let isWeapon = false;
+        let isArmor = false;
+        let equipment = local_user.equipment;
+        let equipmentValues = Object.values(equipment);
+        equipmentValues.map((item) => {
+          if (item == itemNameCapitalized) {
+            isEquipped = true;
+          }
+        });
 
-        const { data: armorCheck, armorError } = await supabase
-          .from("Armor")
-          .select()
-          .eq("name", `${itemNameCapitalized}`);
+        CustomState.getState().Weapons.filter((item) => {
+          if (item.name == itemNameCapitalized) {
+            isWeapon = true;
+            slot = item.slot;
+          }
+        });
 
-        if (armorCheck.length > 0) {
-          const { data: equipableItem, locationError } = await supabase
-            .from("Equipment")
-            .update({ [`${armorCheck[0].slot}`]: "Empty" })
-            .eq("uid", currUser.id);
+        CustomState.getState().Armor.filter((item) => {
+          if (item.name == itemNameCapitalized) {
+            isArmor = true;
+            slot = item.slot;
+          }
+        });
 
-          const { data: addInvItem, error } = await supabase
-            .from("Inventory")
-            .insert({
-              uid: currUser.id,
-              name: armorCheck[0].name,
-              quantity: 1,
+        if (isArmor) {
+          console.log("user equipment");
+          let rawEquipmentData = CustomState.getUserState(
+            currUser.id
+          ).equipment;
+          let rawInventoryData = CustomState.getUserState(
+            currUser.id
+          ).inventory;
+          let equipmentData = Object.create(rawEquipmentData);
+          console.log("Raw Data");
+          if (rawInventoryData != {}) {
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  equipment: {
+                    ...local_user.equipment, // Spread the current equipment data
+                    [slot]: "Empty", // Set right_hand to 'empty'
+                  },
+                },
+              },
             });
-
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  inventory:
+                    `${CustomState.getUserState(currUser.id).inventory}\n` +
+                    `[${itemNameCapitalized}]`, // Set right_hand to 'empty'
+                  // Append unequipped item to inventory
+                },
+              },
+            });
+          } else {
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  equipment: {
+                    ...equipmentData, // Spread the current equipment data
+                    [slot]: "empty", // Set right_hand to 'empty'
+                  },
+                  inventory: [itemNameCapitalized], // Append unequipped item to inventory
+                },
+              },
+            });
+          }
           setTerminal((prevTerminal) => [
             ...prevTerminal,
             {
@@ -281,23 +436,64 @@ export default function Home() {
               message: `You unequipped ${itemNameCapitalized}`,
             }, // updated line
           ]);
-        } else if (weaponCheck.length > 0) {
-          const { data: equipableItem, locationError } = await supabase
-            .from("Equipment")
-            .update({ [`${weaponCheck[0].slot}`]: "Empty" })
-            .eq("uid", currUser.id);
-
-          const { data: addInvItem, error } = await supabase
-            .from("Inventory")
-            .insert({
-              uid: currUser.id,
-              name: weaponCheck[0].name,
-              quantity: 1,
+        } else if (isWeapon) {
+          console.log("user equipment");
+          let rawEquipmentData = CustomState.getUserState(
+            currUser.id
+          ).equipment;
+          let rawInventoryData = CustomState.getUserState(
+            currUser.id
+          ).inventory;
+          let equipmentData = Object.create(rawEquipmentData);
+          console.log("Raw Data");
+          if (rawInventoryData != {}) {
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  equipment: {
+                    ...local_user.equipment, // Spread the current equipment data
+                    [slot]: "Empty", // Set right_hand to 'empty'
+                  },
+                },
+              },
             });
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  inventory:
+                    `${CustomState.getUserState(currUser.id).inventory}\n` +
+                    `[${itemNameCapitalized}]`,
+
+                  // Append unequipped item to inventory
+                },
+              },
+            });
+          } else {
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  equipment: {
+                    ...equipmentData, // Spread the current equipment data
+                    [slot]: "empty", // Set right_hand to 'empty'
+                  },
+                  inventory: [itemNameCapitalized], // Append unequipped item to inventory
+                },
+              },
+            });
+          }
 
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: `You unequipped ${itemName.message}` }, // updated line
+            {
+              type: "system",
+              message: `You unequipped ${itemNameCapitalized}`,
+            }, // updated line
           ]);
         }
       });
@@ -311,15 +507,29 @@ export default function Home() {
     socket.on("mount check", () => {});
     socket.on("move north", async () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.north !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.north}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        if (current_room_data.north !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.north}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -331,15 +541,31 @@ export default function Home() {
     });
     socket.on("move south", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.south !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.south}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        console.log("current location data");
+        console.log(current_room_data);
+        if (current_room_data.south !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.south}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -351,15 +577,29 @@ export default function Home() {
     });
     socket.on("move east", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.east !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.east}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        if (current_room_data.east !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.east}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -371,15 +611,29 @@ export default function Home() {
     });
     socket.on("move west", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.west !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.west}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        if (current_room_data.west !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.west}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -391,15 +645,29 @@ export default function Home() {
     });
     socket.on("enter check", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.enter !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.enter}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        if (current_room_data.enter !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.enter}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -411,15 +679,29 @@ export default function Home() {
     });
     socket.on("exit check", () => {
       getUser().then(async (result) => {
-        currUser = result;
-        let current_location = sessionStorage.getItem("current_location");
-        const { data: currentRoom, roomError } = await supabase
-          .from("Rooms")
-          .select()
-          .eq("room_name", current_location);
-        let roomDetails = currentRoom[0];
-        if (roomDetails.exit !== "None") {
-          sessionStorage.setItem("current_location", `${roomDetails.exit}`);
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let current_location = CustomState.getUserState(currUser.id).character
+          .current_location;
+        let current_room_data;
+        let current_room = CustomState.getState().Rooms.filter((room) => {
+          if (room.room_name == local_user.character.current_location) {
+            current_room_data = room;
+          }
+        });
+        if (current_room_data.exit !== "None") {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  current_location: `${current_room_data.exit}`,
+                },
+              },
+            },
+          });
           socket.emit("game command", "look");
         } else {
           setTerminal((prevTerminal) => [
@@ -434,33 +716,6 @@ export default function Home() {
       socket.disconnect();
     };
   }, []);
-
-  const saveLocation = () => {
-    getUser().then(async (result) => {
-      currUser = result;
-      let current_location = sessionStorage.getItem("current_location");
-      const { data: currentLocationData, locationDataError } = await supabase
-        .from("Char")
-        .select()
-        .eq("uid", currUser.id);
-      let currentDbLocation = currentLocationData[0].current_location;
-      console.log(current_location);
-      console.log(currentDbLocation);
-      if (currentDbLocation != current_location) {
-        const { data: saveLocationData, locationError } = await supabase
-          .from("Char")
-          .update({
-            [`current_location`]: `${current_location}`,
-          })
-          .eq("uid", currUser.id);
-
-        console.log("Location Saved");
-        setTimeout(saveLocation, 65000);
-      } else {
-        console.log(`player hasn't moved.`);
-      }
-    });
-  };
 
   // saveLocation();
 
