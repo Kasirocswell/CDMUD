@@ -58,14 +58,29 @@ export default function Home() {
       });
     }
   };
+
+  const setRoomInventory = async () => {
+    const { data, error } = await supabase.from("Weapons").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "RoomInventory", data },
+      });
+    }
+  };
   setMap();
   setWeapons();
   setArmor();
+  setRoomInventory();
   let rooms = CustomState.getRoomState();
   console.log("logging rooms");
   console.log(rooms);
   let weapons = CustomState.getWeaponState();
   let armor = CustomState.getArmorState();
+  let roomInventory = customState.getState().RoomInventory;
   const dataCheck = () => {
     if (rooms == null || rooms == undefined || typeof rooms != "array") {
       setMap();
@@ -85,6 +100,17 @@ export default function Home() {
       setArmor();
       armor = CustomState.getArmorState();
       console.log("Armor Set");
+      CustomState.printState();
+    }
+
+    if (
+      roomInventory == null ||
+      roomInventory == undefined ||
+      typeof roomInventory != "array"
+    ) {
+      setRoomInventory();
+      rooms = CustomState.getState().RoomInventory;
+      console.log("Room Inventory Set");
       CustomState.printState();
     }
   };
@@ -498,13 +524,27 @@ export default function Home() {
         }
       });
     });
-    socket.on("drop item", () => {});
-    socket.on("pickup item", () => {});
+    socket.on("drop item", () => {
+      // Check if user has this item in their inventory
+      // add the item to cooresponding room inventory
+      // remove the item from the user inventory
+    });
+    socket.on("pickup item", () => {
+      // Check if the item exists in room inventory
+      // add item to the player inventory
+      // remove item from the room inventory
+    });
     socket.on("attack check", () => {});
     socket.on("yield check", () => {});
     socket.on("use check", () => {});
-    socket.on("loot check", () => {});
-    socket.on("mount check", () => {});
+    socket.on("loot check", () => {
+      // check if the corresponding enemy is indeed dead
+      // check the dead enemy's inventory
+      // loot all or some of the dead enemy inventory
+      // add looted items to player inventory
+      // remove looted items from dead enemy inventory
+    });
+    // socket.on("mount check", () => {});
     socket.on("move north", async () => {
       getUser().then(async (result) => {
         let currUser = result;

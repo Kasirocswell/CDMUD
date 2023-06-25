@@ -1,6 +1,5 @@
 let state = {
   users: {},
-  inventory: {},
   items: {},
 };
 
