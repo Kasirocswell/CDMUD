@@ -30,8 +30,6 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
 
     getUser().then(async (result) => {
       currUser = result;
-      console.log("current user");
-      console.log(currUser);
 
       const createCharacter = async () => {
         let characterName = window.prompt("Enter your character name: ", "");

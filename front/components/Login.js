@@ -36,9 +36,6 @@ const Login = ({ LoggedIn, tabsToggle }) => {
       .eq("uid", currUser.id)
       .single();
 
-    console.log("equipment data");
-    console.log(equipmentData);
-
     CustomState.dispatch({
       type: "UPDATE_USER",
       payload: {

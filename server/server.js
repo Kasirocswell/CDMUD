@@ -25,6 +25,7 @@ io.on("connection", (socket) => {
     type: "global",
     message: `Welcome to Celestial Deep`,
   });
+  setTimeout(io.emit("look check"), 3000);
 
   // On Game Command from Console.js
   socket.on("game command", (command) => {
@@ -82,7 +83,14 @@ io.on("connection", (socket) => {
           message: `${itemName}`,
         });
       } else if (command.toLowerCase().startsWith("drop")) {
-        io.emit("drop item");
+        // Extract the item name from the command
+        const itemName = command.slice(5); // remove 'unequip ' from the command
+        console.log("Drop command received from client for item:", itemName);
+        // Then emit the itemName to the client
+        io.emit("drop item", {
+          type: "system",
+          message: `${itemName}`,
+        });
       } else if (
         command.toLowerCase().startsWith("pickup") ||
         command.toLowerCase().startsWith("get")

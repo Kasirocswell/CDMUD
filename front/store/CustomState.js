@@ -1,6 +1,7 @@
 let state = {
   users: {},
   items: {},
+  loot: [],
 };
 
 let listeners = [];

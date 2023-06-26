@@ -59,58 +59,30 @@ export default function Home() {
     }
   };
 
-  const setRoomInventory = async () => {
-    const { data, error } = await supabase.from("Weapons").select("*");
-
-    if (error) {
-      console.error("Error fetching data:", error);
-    } else {
-      CustomState.dispatch({
-        type: "SET_TABLE_DATA",
-        payload: { tableName: "RoomInventory", data },
-      });
-    }
-  };
   setMap();
   setWeapons();
   setArmor();
-  setRoomInventory();
   let rooms = CustomState.getRoomState();
-  console.log("logging rooms");
-  console.log(rooms);
   let weapons = CustomState.getWeaponState();
   let armor = CustomState.getArmorState();
-  let roomInventory = customState.getState().RoomInventory;
+  let roomInventory = CustomState.getState().RoomInventory;
+
   const dataCheck = () => {
     if (rooms == null || rooms == undefined || typeof rooms != "array") {
       setMap();
       rooms = CustomState.getRoomState();
-      console.log("Map Set");
       CustomState.printState();
     }
 
     if (weapons == null || weapons == undefined) {
       setWeapons();
       weapons = CustomState.getWeaponState();
-      console.log("Weapons Set");
       CustomState.printState();
     }
 
     if (armor == null || armor == undefined) {
       setArmor();
       armor = CustomState.getArmorState();
-      console.log("Armor Set");
-      CustomState.printState();
-    }
-
-    if (
-      roomInventory == null ||
-      roomInventory == undefined ||
-      typeof roomInventory != "array"
-    ) {
-      setRoomInventory();
-      rooms = CustomState.getState().RoomInventory;
-      console.log("Room Inventory Set");
       CustomState.printState();
     }
   };
@@ -125,7 +97,6 @@ export default function Home() {
         console.log(result);
         let currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
-        console.log(local_user);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
@@ -157,10 +128,9 @@ export default function Home() {
       ]);
     });
 
-    // Character Check - Title - and initial Look call
+    // Character Check - Title
     socket.on("character check", async () => {
       console.log("character check");
-      socket.emit("game command", "look");
     });
 
     // System Command Event Listener functions
@@ -234,18 +204,23 @@ export default function Home() {
         let currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
         let current_room;
+        let roomInventory = CustomState.getState().RoomInventory;
         let find_current_room = CustomState.getState().Rooms.filter((room) => {
           if (room.room_name == local_user.character.current_location) {
             current_room = room;
           }
         });
-
+        const loot = CustomState.getState().loot;
+        let roomLoot = loot.map((loot) => {
+          return ` ${loot.item_name}`;
+        });
         let roomDetails = current_room;
         let roomName = `
           ${roomDetails.room_name}
           `;
         let roomDescription = `
           ${roomDetails.description}
+          
         `;
         setTerminal((prevTerminal) => [
           ...prevTerminal,
@@ -253,6 +228,7 @@ export default function Home() {
             type: "system",
             message: `${roomName} 
                       ${roomDescription}
+    Loot in the room: ${roomLoot}
                                       `,
           }, // updated line
         ]);
@@ -274,8 +250,6 @@ export default function Home() {
         let isWeapon = false;
         let isArmor = false;
         let inventory = [...CustomState.getUserState(currUser.id).inventory];
-        console.log("inventory data");
-        console.log(inventory);
 
         if (
           CustomState.getUserState(currUser.id).inventory.includes(
@@ -316,9 +290,9 @@ export default function Home() {
             payload: {
               userId: currUser.id,
               data: {
-                inventory:
-                  CustomState.getUserState(currUser.id).inventory -
-                  `${itemNameCapitalized}`,
+                inventory: CustomState.getUserState(
+                  currUser.id
+                ).inventory.replace(`${itemNameCapitalized}`, ""),
                 // Set right_hand to 'empty'
                 // Append unequipped item to inventory
               },
@@ -414,7 +388,6 @@ export default function Home() {
             currUser.id
           ).inventory;
           let equipmentData = Object.create(rawEquipmentData);
-          console.log("Raw Data");
           if (rawInventoryData != {}) {
             CustomState.dispatch({
               type: "UPDATE_USER",
@@ -435,7 +408,7 @@ export default function Home() {
                 data: {
                   inventory:
                     `${CustomState.getUserState(currUser.id).inventory}\n` +
-                    `[${itemNameCapitalized}]`, // Set right_hand to 'empty'
+                    `${itemNameCapitalized}`, // Set right_hand to 'empty'
                   // Append unequipped item to inventory
                 },
               },
@@ -463,7 +436,6 @@ export default function Home() {
             }, // updated line
           ]);
         } else if (isWeapon) {
-          console.log("user equipment");
           let rawEquipmentData = CustomState.getUserState(
             currUser.id
           ).equipment;
@@ -471,7 +443,6 @@ export default function Home() {
             currUser.id
           ).inventory;
           let equipmentData = Object.create(rawEquipmentData);
-          console.log("Raw Data");
           if (rawInventoryData != {}) {
             CustomState.dispatch({
               type: "UPDATE_USER",
@@ -480,7 +451,7 @@ export default function Home() {
                 data: {
                   equipment: {
                     ...local_user.equipment, // Spread the current equipment data
-                    [slot]: "Empty", // Set right_hand to 'empty'
+                    slot: "Empty", // Set right_hand to 'empty'
                   },
                 },
               },
@@ -492,7 +463,7 @@ export default function Home() {
                 data: {
                   inventory:
                     `${CustomState.getUserState(currUser.id).inventory}\n` +
-                    `[${itemNameCapitalized}]`,
+                    `${itemNameCapitalized}`,
 
                   // Append unequipped item to inventory
                 },
@@ -508,7 +479,7 @@ export default function Home() {
                     ...equipmentData, // Spread the current equipment data
                     [slot]: "empty", // Set right_hand to 'empty'
                   },
-                  inventory: [itemNameCapitalized], // Append unequipped item to inventory
+                  inventory: itemNameCapitalized, // Append unequipped item to inventory
                 },
               },
             });
@@ -524,12 +495,67 @@ export default function Home() {
         }
       });
     });
-    socket.on("drop item", () => {
-      // Check if user has this item in their inventory
-      // add the item to cooresponding room inventory
-      // remove the item from the user inventory
+    socket.on("drop item", (itemName) => {
+      let inInventory = false;
+      let itemNameMessage = itemName.message;
+      let itemNameCapitalized = itemNameMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+
+      getUser().then(async (result) => {
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        let newId = 10;
+        let droppedItems = {
+          id: newId, // this needs to be unique, so you can't just use 0
+          created_at: new Date().toISOString(), // for current time in ISO format
+          room_name: local_user.character.current_location,
+          item_name: itemNameCapitalized,
+          Quantity: "1",
+        };
+        let newInventory = [...CustomState.getState().loot, droppedItems];
+        if (
+          CustomState.getUserState(currUser.id).inventory.includes(
+            `${itemNameCapitalized}`
+          )
+        ) {
+          inInventory = true;
+        }
+
+        if (inInventory) {
+          CustomState.dispatch({
+            type: "SET_TABLE_DATA",
+            payload: {
+              tableName: "loot",
+              data: newInventory,
+            },
+          });
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                inventory: CustomState.getUserState(
+                  currUser.id
+                ).inventory.replace(`${itemNameCapitalized}`, ""),
+                // Set right_hand to 'empty'
+                // Append unequipped item to inventory
+              },
+            },
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You dropped ${itemNameCapitalized}` }, // updated line
+          ]);
+        } else {
+          console.log("You don't have that item");
+        }
+      });
     });
     socket.on("pickup item", () => {
+      // Set server side commands
       // Check if the item exists in room inventory
       // add item to the player inventory
       // remove item from the room inventory
@@ -591,8 +617,6 @@ export default function Home() {
             current_room_data = room;
           }
         });
-        console.log("current location data");
-        console.log(current_room_data);
         if (current_room_data.south !== "None") {
           CustomState.dispatch({
             type: "UPDATE_USER",
