@@ -212,7 +212,10 @@ export default function Home() {
         });
         const loot = CustomState.getState().loot;
         let roomLoot = loot.map((loot) => {
-          return ` ${loot.item_name}`;
+          if (loot.room_name == local_user.character.current_location) {
+            return `${loot.item_name}`;
+          } else {
+          }
         });
         let roomDetails = current_room;
         let roomName = `
@@ -554,7 +557,7 @@ export default function Home() {
         }
       });
     });
-    socket.on("pickup item", () => {
+    socket.on("pickup item", (itemName) => {
       // Set server side commands
       // Check if the item exists in room inventory
       // add item to the player inventory
@@ -572,18 +575,15 @@ export default function Home() {
         let local_user = CustomState.getUserState(currUser.id);
 
         let newInventory = [
-          ...CustomState.getState().loot,
-          itemNameCapitalized,
+          ...CustomState.getState().loot.filter((loot) => {
+            loot.item_name != itemNameCapitalized;
+          }),
         ];
-        if (
-          CustomState.getUserState(currUser.id).inventory.includes(
-            `${itemNameCapitalized}`
-          )
-        ) {
+        if (CustomState.getState().loot.includes(`${itemNameCapitalized}`)) {
           inInventory = true;
         }
 
-        if (inInventory) {
+        if (!inInventory) {
           CustomState.dispatch({
             type: "SET_TABLE_DATA",
             payload: {
@@ -596,9 +596,9 @@ export default function Home() {
             payload: {
               userId: currUser.id,
               data: {
-                inventory: CustomState.getUserState(
-                  currUser.id
-                ).inventory.replace(`${itemNameCapitalized}`, ""),
+                inventory:
+                  `${CustomState.getUserState(currUser.id).inventory}\n` +
+                  `${itemNameCapitalized}`,
                 // Set right_hand to 'empty'
                 // Append unequipped item to inventory
               },
@@ -606,7 +606,7 @@ export default function Home() {
           });
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: `You dropped ${itemNameCapitalized}` }, // updated line
+            { type: "system", message: `You picked up ${itemNameCapitalized}` }, // updated line
           ]);
         } else {
           console.log("You don't have that item");

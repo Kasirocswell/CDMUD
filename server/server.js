@@ -97,7 +97,13 @@ io.on("connection", (socket) => {
         command.toLowerCase().startsWith("pickup") ||
         command.toLowerCase().startsWith("get")
       ) {
-        io.emit("pickup item");
+        const itemName = command.slice(7); // remove 'unequip ' from the command
+        console.log("Pickup command received from client for item:", itemName);
+        // Then emit the itemName to the client
+        io.emit("pickup item", {
+          type: "system",
+          message: `${itemName}`,
+        });
       } else if (
         command.toLowerCase().startsWith("attack") ||
         command.toLowerCase().startsWith("kill")
