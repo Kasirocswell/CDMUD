@@ -559,6 +559,59 @@ export default function Home() {
       // Check if the item exists in room inventory
       // add item to the player inventory
       // remove item from the room inventory
+      let inInventory = false;
+      let itemNameMessage = itemName.message;
+      let itemNameCapitalized = itemNameMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+
+      getUser().then(async (result) => {
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+
+        let newInventory = [
+          ...CustomState.getState().loot,
+          itemNameCapitalized,
+        ];
+        if (
+          CustomState.getUserState(currUser.id).inventory.includes(
+            `${itemNameCapitalized}`
+          )
+        ) {
+          inInventory = true;
+        }
+
+        if (inInventory) {
+          CustomState.dispatch({
+            type: "SET_TABLE_DATA",
+            payload: {
+              tableName: "loot",
+              data: newInventory,
+            },
+          });
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                inventory: CustomState.getUserState(
+                  currUser.id
+                ).inventory.replace(`${itemNameCapitalized}`, ""),
+                // Set right_hand to 'empty'
+                // Append unequipped item to inventory
+              },
+            },
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You dropped ${itemNameCapitalized}` }, // updated line
+          ]);
+        } else {
+          console.log("You don't have that item");
+        }
+      });
     });
     socket.on("attack check", () => {});
     socket.on("yield check", () => {});
