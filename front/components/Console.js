@@ -623,7 +623,7 @@ export default function Home() {
       // add looted items to player inventory
       // remove looted items from dead enemy inventory
     });
-    // socket.on("mount check", () => {});
+    socket.on("mount check", () => {});
     socket.on("move north", async () => {
       getUser().then(async (result) => {
         let currUser = result;

@@ -25,7 +25,9 @@ io.on("connection", (socket) => {
     type: "global",
     message: `Welcome to Celestial Deep`,
   });
-  setTimeout(io.emit("look check"), 3000);
+  setTimeout(() => {
+    io.emit("look check");
+  }, 3000);
 
   // On Game Command from Console.js
   socket.on("game command", (command) => {
