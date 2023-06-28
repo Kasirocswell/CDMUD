@@ -1,6 +1,6 @@
 let state = {
   users: {},
-  items: {},
+  items: [],
   loot: [],
 };
 
@@ -50,6 +50,10 @@ const CustomState = {
 
   getArmorState: () => {
     return state?.Armor || {};
+  },
+
+  getItemState: () => {
+    return state?.items || [];
   },
 
   getUserState: (userId) => {

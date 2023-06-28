@@ -59,34 +59,66 @@ export default function Home() {
     }
   };
 
+  const setItems = async () => {
+    const { data, error } = await supabase.from("Items").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Items", data },
+      });
+    }
+  };
+  const setEnemies = async () => {
+    const { data, error } = await supabase.from("Enemies").select("*");
+
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Enemies", data },
+      });
+    }
+  };
   setMap();
   setWeapons();
   setArmor();
-  let rooms = CustomState.getRoomState();
-  let weapons = CustomState.getWeaponState();
-  let armor = CustomState.getArmorState();
-  let roomInventory = CustomState.getState().RoomInventory;
+  setItems();
+  setEnemies();
+  // let rooms = CustomState.getRoomState();
+  // let weapons = CustomState.getWeaponState();
+  // let armor = CustomState.getArmorState();
+  // let roomInventory = CustomState.getState().RoomInventory;
 
-  const dataCheck = () => {
-    if (rooms == null || rooms == undefined || typeof rooms != "array") {
-      setMap();
-      rooms = CustomState.getRoomState();
-      CustomState.printState();
-    }
+  // const dataCheck = () => {
+  //   if (rooms == null || rooms == undefined || typeof rooms != "array") {
+  //     setMap();
+  //     rooms = CustomState.getRoomState();
+  //     CustomState.printState();
+  //   }
 
-    if (weapons == null || weapons == undefined) {
-      setWeapons();
-      weapons = CustomState.getWeaponState();
-      CustomState.printState();
-    }
+  //   if (weapons == null || weapons == undefined) {
+  //     setWeapons();
+  //     weapons = CustomState.getWeaponState();
+  //     CustomState.printState();
+  //   }
 
-    if (armor == null || armor == undefined) {
-      setArmor();
-      armor = CustomState.getArmorState();
-      CustomState.printState();
-    }
-  };
-  dataCheck();
+  //   if (armor == null || armor == undefined) {
+  //     setArmor();
+  //     armor = CustomState.getArmorState();
+  //     CustomState.printState();
+  //   }
+
+  //   if (items == null || items == undefined) {
+  //     setArmor();
+  //     items = CustomState.getItemState();
+  //     CustomState.printState();
+  //   }
+  // };
+  // dataCheck();
 
   // Listening Events UseEffect
   useEffect(() => {
@@ -218,6 +250,13 @@ export default function Home() {
           }
         });
         let roomDetails = current_room;
+        let enemies = CustomState.getState().Enemies.filter((enemy) => {
+          return (
+            enemy.current_location == local_user.character.current_location
+          );
+        });
+
+        let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
         let roomName = `
           ${roomDetails.room_name}
           `;
@@ -232,6 +271,8 @@ export default function Home() {
             message: `${roomName} 
                       ${roomDescription}
     Loot in the room: ${roomLoot}
+    Enemies in the room: ${enemiesInRoom}
+    Players in the room: 
                                       `,
           }, // updated line
         ]);
@@ -613,9 +654,103 @@ export default function Home() {
         }
       });
     });
-    socket.on("attack check", () => {});
+    socket.on("attack check", (target) => {
+      // check if target is in the room
+      // check if target is alive
+      // check if target can be attacked
+      // start battle sequnce
+      // when one party's health reaches zero end battle sequence
+      // make battle results announcement
+      // drop loot, set loot system
+      let targetMessage = target.message;
+      let targetNameCapitalized = targetMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+
+      getUser().then((result) => {
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+
+        let enemies = CustomState.getState().Enemies.filter((enemy) => {
+          return (
+            enemy.current_location == local_user.character.current_location
+          );
+        });
+
+        let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
+      });
+
+      let targetedEnemy = enemiesInRoom.map((enemy) => enemy == target.message);
+      let targetAlive;
+      if (targetedEnemy.health > 0) {
+        targetAlive = true;
+      } else {
+        targetAlive = false;
+      }
+      let canAttack = false;
+      if (targetedEnemy.can_attack) {
+        canAttack = true;
+      } else {
+        canAttack = false;
+      }
+    });
     socket.on("yield check", () => {});
-    socket.on("use check", () => {});
+    socket.on("use check", (itemName) => {
+      let canUse = false;
+      let inInventory = false;
+      let itemNameMessage = itemName.message;
+      let itemNameCapitalized = itemNameMessage
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+
+      getUser().then((result) => {
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+
+        let newInventory = [
+          ...CustomState.getState().loot.filter((loot) => {
+            loot.item_name != itemNameCapitalized;
+          }),
+        ];
+
+        if (CustomState.getState().loot.includes(`${itemNameCapitalized}`)) {
+          inInventory = true;
+        }
+        CustomState.getState().items.map((item) => {
+          if (item.name == itemName.message) {
+            if (item.canUse == true) {
+              canUse = true;
+              console.log("can use?");
+              console.log(canUse);
+            }
+          }
+        });
+
+        if (canUse) {
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                inventory: CustomState.getUserState(
+                  currUser.id
+                ).inventory.replace(`${itemNameCapitalized}`, ""),
+              },
+            },
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You used ${itemNameCapitalized}` }, // updated line
+          ]);
+        } else {
+          console.log("You can't use that");
+        }
+      });
+    });
     socket.on("loot check", () => {
       // check if the corresponding enemy is indeed dead
       // check the dead enemy's inventory

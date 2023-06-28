@@ -108,15 +108,32 @@ io.on("connection", (socket) => {
         command.toLowerCase().startsWith("attack") ||
         command.toLowerCase().startsWith("kill")
       ) {
-        io.emit("attack check");
+        let target;
+        if (command.toLowerCase().startsWith("attack")) {
+          target = command.slice(7);
+        } else if (command.toLowerCase().startsWith("kill")) {
+          target = command.slice(5);
+        } // remove 'unequip ' from the command
+        console.log("attack command received from client for target:", target);
+        // Then emit the itemName to the client
+        io.emit("attack check", {
+          type: "system",
+          message: `${target}`,
+        });
       } else if (command.toLowerCase().startsWith("yield")) {
         io.emit("yield check");
       } else if (command.toLowerCase().startsWith("use")) {
-        io.emit("use check");
+        const itemName = command.slice(4); // remove 'use ' from the command
+        console.log("Equip command received from client for item:", itemName);
+        // Then emit the itemName to the client
+        io.emit("use check", {
+          type: "system",
+          message: `${itemName}`,
+        });
       } else if (command.toLowerCase().startsWith("loot")) {
         io.emit("loot check");
       } else if (command.toLowerCase().startsWith("mount")) {
-        io.emit("mount check");
+        // io.emit("mount check");
       } else if (
         command.toLowerCase() == "north" ||
         command.toLowerCase() == "n"
