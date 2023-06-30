@@ -62,6 +62,12 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
           .eq("uid", currUser.id)
           .single();
 
+        const { data: attributesData, attributesDataError } = await supabase
+          .from("Attributes")
+          .select()
+          .eq("uid", currUser.id)
+          .single();
+
         CustomState.dispatch({
           type: "UPDATE_USER",
           payload: {
@@ -70,6 +76,7 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
               character: {
                 name: `${characterData.char_name}`,
                 race: `${characterData.char_race}`,
+                health: `${characterData.char_health}`,
                 level: `${characterData.char_level}`,
                 xp: `${characterData.char_xp}`,
                 current_location: `${characterData.current_location}`,
@@ -86,6 +93,10 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
                 waist: `${equipmentData.waist}`,
                 legs: `${equipmentData.legs}`,
                 feet: `${equipmentData.feet}`,
+              },
+              attributes: {
+                str: `${attributesData.str}`,
+                spd: `${attributesData.spd}`,
               },
               inventory: [],
               vehicles: {},

@@ -88,6 +88,7 @@ export default function Home() {
   setArmor();
   setItems();
   setEnemies();
+  CustomState.printState();
   // let rooms = CustomState.getRoomState();
   // let weapons = CustomState.getWeaponState();
   // let armor = CustomState.getArmorState();
@@ -658,7 +659,7 @@ export default function Home() {
       // check if target is in the room
       // check if target is alive
       // check if target can be attacked
-      // start battle sequnce
+      // start battle sequence
       // when one party's health reaches zero end battle sequence
       // make battle results announcement
       // drop loot, set loot system
@@ -680,21 +681,51 @@ export default function Home() {
         });
 
         let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
-      });
 
-      let targetedEnemy = enemiesInRoom.map((enemy) => enemy == target.message);
-      let targetAlive;
-      if (targetedEnemy.health > 0) {
-        targetAlive = true;
-      } else {
-        targetAlive = false;
-      }
-      let canAttack = false;
-      if (targetedEnemy.can_attack) {
-        canAttack = true;
-      } else {
-        canAttack = false;
-      }
+        let targetedEnemy = enemies.map((enemy) => enemy.name).join(", ");
+        let targetAlive;
+        if (targetedEnemy.health > 0) {
+          targetAlive = true;
+        } else {
+          targetAlive = false;
+        }
+        let canAttack = false;
+        if (targetedEnemy.can_attack) {
+          canAttack = true;
+        } else {
+          canAttack = false;
+        }
+        let playerAlive;
+        if (local_user.character.health > 0) {
+          playerAlive = true;
+        } else {
+          playerAlive = false;
+        }
+        let totalDamage;
+        let natDamage = local_user.attributes.str * 2;
+        totalDamage = natDamage;
+        let weaponRightHand = CustomState.getWeaponState().filter((weapon) => {
+          return weapon.name == local_user.equipment.right_hand;
+        });
+        let weaponLeftHand = "Empty";
+        if (weaponRightHand != "Empty") {
+          totalDamage += weaponRightHand.atk;
+        }
+        if (weaponLeftHand != "Empty") {
+          totalDamage += weaponLeftHand.atk;
+        }
+        function attack() {
+          let enemyDamage = targetedEnemy.def;
+          enemyDamage - targetedEnemy.health;
+          console.log(targetedEnemy.health);
+        }
+
+        if (!playerAlive && !targetAlive && !canAttack) {
+          console.log("Somebodies Dead 💀");
+        } else {
+          attack();
+        }
+      });
     });
     socket.on("yield check", () => {});
     socket.on("use check", (itemName) => {
