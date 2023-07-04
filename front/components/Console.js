@@ -619,6 +619,7 @@ export default function Home() {
       });
     });
     socket.on("enemy check", () => {
+      let enemyHealth;
       getUser().then((result) => {
         currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
@@ -640,6 +641,20 @@ export default function Home() {
       });
 
       function autoAttack() {
+        getUser().then((result) => {
+          currUser = result;
+          let local_user = CustomState.getUserState(currUser.id);
+          let enemies = CustomState.getState().Enemies.filter((enemy) => {
+            if (
+              enemy.current_location ===
+                local_user.character.current_location &&
+              enemy.health > 0 &&
+              local_user.character.health > 0
+            ) {
+              enemyHealth = Number(enemy.health);
+            }
+          });
+        });
         // Enemy attack
         setTimeout(function () {
           const enemyAttackInterval = setInterval(() => {
@@ -647,15 +662,15 @@ export default function Home() {
               currUser = result;
               let local_user = CustomState.getUserState(currUser.id);
               let enemies = CustomState.getState().Enemies.filter((enemy) => {
-                console.log(enemy);
+                let playerHealth = Number(local_user.character.health);
                 if (
                   enemy.current_location ===
                     local_user.character.current_location &&
-                  enemy.health > 0
+                  enemyHealth > 0 &&
+                  local_user.character.health > 0
                 ) {
-                  console.log("The enemy can see you");
-                  let enemyDamage = enemy.atk;
-                  local_user.character.char_health -= enemyDamage * 2;
+                  let enemyDamage = 2;
+                  playerHealth = playerHealth - enemyDamage * 2;
                   let attackMessage = `${enemy.name} attacked you for ${
                     enemyDamage * 2
                   } damage`;
@@ -663,6 +678,25 @@ export default function Home() {
                     ...prevTerminal,
                     { type: "system", message: `${attackMessage}` }, // updated line
                   ]);
+
+                  CustomState.dispatch({
+                    type: "UPDATE_USER",
+                    payload: {
+                      userId: currUser.id,
+                      data: {
+                        character: {
+                          ...CustomState.getState().users[currUser.id]
+                            .character, // Spread the current character data
+                          health: `${playerHealth}`, // Update only health
+                        },
+                      },
+                    },
+                  });
+                  console.log("END OF ENEMY ROUND");
+                  console.log(playerHealth);
+                } else {
+                  clearInterval(playerAttackInterval);
+                  clearInterval(enemyAttackInterval);
                 }
               });
             });
@@ -674,20 +708,27 @@ export default function Home() {
               currUser = result;
               let local_user = CustomState.getUserState(currUser.id);
               let enemies = CustomState.getState().Enemies.filter((enemy) => {
-                console.log(enemy);
+                let playerHealth = Number(local_user.character.health);
                 if (
                   enemy.current_location ===
                     local_user.character.current_location &&
-                  enemy.health > 0
+                  enemyHealth > 0 &&
+                  playerHealth > 0
                 ) {
-                  console.log("You can see the enemy");
                   let enemyDamage = 10;
-                  enemy.health -= enemyDamage;
+                  enemyHealth = enemyHealth - 10;
                   let attackMessage = `You attacked ${enemy.name} for ${enemyDamage} damage`;
                   setTerminal((prevTerminal) => [
                     ...prevTerminal,
                     { type: "system", message: `${attackMessage}` }, // updated line
                   ]);
+
+                  console.log("END OF PLAYER ROUND");
+                  console.log(enemyHealth);
+                  console.log(CustomState.getState().Enemies);
+                } else {
+                  clearInterval(playerAttackInterval);
+                  clearInterval(enemyAttackInterval);
                 }
               });
             });
