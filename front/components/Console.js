@@ -20,6 +20,8 @@ export default function Home() {
     return user;
   };
 
+  let currUser;
+
   const setMap = async () => {
     const { data, error } = await supabase.from("Rooms").select("*");
 
@@ -89,37 +91,6 @@ export default function Home() {
   setItems();
   setEnemies();
   CustomState.printState();
-  // let rooms = CustomState.getRoomState();
-  // let weapons = CustomState.getWeaponState();
-  // let armor = CustomState.getArmorState();
-  // let roomInventory = CustomState.getState().RoomInventory;
-
-  // const dataCheck = () => {
-  //   if (rooms == null || rooms == undefined || typeof rooms != "array") {
-  //     setMap();
-  //     rooms = CustomState.getRoomState();
-  //     CustomState.printState();
-  //   }
-
-  //   if (weapons == null || weapons == undefined) {
-  //     setWeapons();
-  //     weapons = CustomState.getWeaponState();
-  //     CustomState.printState();
-  //   }
-
-  //   if (armor == null || armor == undefined) {
-  //     setArmor();
-  //     armor = CustomState.getArmorState();
-  //     CustomState.printState();
-  //   }
-
-  //   if (items == null || items == undefined) {
-  //     setArmor();
-  //     items = CustomState.getItemState();
-  //     CustomState.printState();
-  //   }
-  // };
-  // dataCheck();
 
   // Listening Events UseEffect
   useEffect(() => {
@@ -128,7 +99,7 @@ export default function Home() {
     socket.on("chat message", (msg) => {
       getUser().then((result) => {
         console.log(result);
-        let currUser = result;
+        currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
@@ -535,7 +506,7 @@ export default function Home() {
             {
               type: "system",
               message: `You unequipped ${itemNameCapitalized}`,
-            }, // updated line
+            },
           ]);
         }
       });
@@ -585,8 +556,6 @@ export default function Home() {
                 inventory: CustomState.getUserState(
                   currUser.id
                 ).inventory.replace(`${itemNameCapitalized}`, ""),
-                // Set right_hand to 'empty'
-                // Append unequipped item to inventory
               },
             },
           });
@@ -600,10 +569,6 @@ export default function Home() {
       });
     });
     socket.on("pickup item", (itemName) => {
-      // Set server side commands
-      // Check if the item exists in room inventory
-      // add item to the player inventory
-      // remove item from the room inventory
       let inInventory = false;
       let itemNameMessage = itemName.message;
       let itemNameCapitalized = itemNameMessage
@@ -641,8 +606,6 @@ export default function Home() {
                 inventory:
                   `${CustomState.getUserState(currUser.id).inventory}\n` +
                   `${itemNameCapitalized}`,
-                // Set right_hand to 'empty'
-                // Append unequipped item to inventory
               },
             },
           });
@@ -655,6 +618,90 @@ export default function Home() {
         }
       });
     });
+    socket.on("enemy check", () => {
+      getUser().then((result) => {
+        currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        CustomState.getState().Enemies.filter((enemy) => {
+          if (
+            enemy.current_location === local_user.character.current_location
+          ) {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `${enemy.name} glares at you angrily.`,
+              },
+            ]);
+          } else {
+            console.log("something went horribly wrong");
+          }
+        });
+      });
+
+      function autoAttack() {
+        // Enemy attack
+        setTimeout(function () {
+          const enemyAttackInterval = setInterval(() => {
+            getUser().then((result) => {
+              currUser = result;
+              let local_user = CustomState.getUserState(currUser.id);
+              let enemies = CustomState.getState().Enemies.filter((enemy) => {
+                console.log(enemy);
+                if (
+                  enemy.current_location ===
+                    local_user.character.current_location &&
+                  enemy.health > 0
+                ) {
+                  console.log("The enemy can see you");
+                  let enemyDamage = enemy.atk;
+                  local_user.character.char_health -= enemyDamage * 2;
+                  let attackMessage = `${enemy.name} attacked you for ${
+                    enemyDamage * 2
+                  } damage`;
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    { type: "system", message: `${attackMessage}` }, // updated line
+                  ]);
+                }
+              });
+            });
+          }, 2000); // Adjust interval length as necessary
+
+          // Player attack
+          const playerAttackInterval = setInterval(() => {
+            getUser().then((result) => {
+              currUser = result;
+              let local_user = CustomState.getUserState(currUser.id);
+              let enemies = CustomState.getState().Enemies.filter((enemy) => {
+                console.log(enemy);
+                if (
+                  enemy.current_location ===
+                    local_user.character.current_location &&
+                  enemy.health > 0
+                ) {
+                  console.log("You can see the enemy");
+                  let enemyDamage = 10;
+                  enemy.health -= enemyDamage;
+                  let attackMessage = `You attacked ${enemy.name} for ${enemyDamage} damage`;
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    { type: "system", message: `${attackMessage}` }, // updated line
+                  ]);
+                }
+              });
+            });
+          }, 1000);
+
+          // Cleanup function
+          return () => {
+            clearInterval(playerAttackInterval);
+            clearInterval(enemyAttackInterval);
+          };
+        }, 12000);
+      }
+      autoAttack();
+    });
     socket.on("attack check", (target) => {
       // check if target is in the room
       // check if target is alive
@@ -663,6 +710,8 @@ export default function Home() {
       // when one party's health reaches zero end battle sequence
       // make battle results announcement
       // drop loot, set loot system
+      // remove enemy from the room
+      // create respawn system from enemies
       let targetMessage = target.message;
       let targetNameCapitalized = targetMessage
         .toLowerCase()
@@ -674,15 +723,16 @@ export default function Home() {
         let currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
 
+        // Check if the enemy is in the room
         let enemies = CustomState.getState().Enemies.filter((enemy) => {
           return (
             enemy.current_location == local_user.character.current_location
           );
         });
 
-        let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
+        let targetedEnemy = enemies[0];
 
-        let targetedEnemy = enemies.map((enemy) => enemy.name).join(", ");
+        // check if target is alive
         let targetAlive;
         if (targetedEnemy.health > 0) {
           targetAlive = true;
@@ -714,16 +764,71 @@ export default function Home() {
         if (weaponLeftHand != "Empty") {
           totalDamage += weaponLeftHand.atk;
         }
-        function attack() {
-          let enemyDamage = targetedEnemy.def;
-          enemyDamage - targetedEnemy.health;
-          console.log(targetedEnemy.health);
+        let autoAttackInterval = null;
+        if (playerAlive && targetAlive && canAttack) {
+          autoAttack();
+        } else {
+          console.log("You can't attack that.");
         }
 
-        if (!playerAlive && !targetAlive && !canAttack) {
-          console.log("Somebodies Dead 💀");
-        } else {
-          attack();
+        function autoAttack() {
+          // Player attack
+          const playerAttackInterval = setInterval(() => {
+            getUser().then((result) => {
+              currUser = result;
+              let local_user = CustomState.getUserState(currUser.id);
+              let enemies = CustomState.getState().Enemies.filter((enemy) => {
+                console.log(enemy);
+                if (
+                  enemy.current_location ===
+                    local_user.character.current_location &&
+                  enemy.health > 0
+                ) {
+                  console.log("You can see the enemy");
+                  let enemyDamage = 10;
+                  enemy.health -= enemyDamage;
+                  let attackMessage = `You attacked ${enemy.name} for ${enemyDamage} damage`;
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    { type: "system", message: `${attackMessage}` }, // updated line
+                  ]);
+                }
+              });
+            });
+          }, 1000); // Adjust interval length as necessary
+
+          // Enemy attack
+          const enemyAttackInterval = setInterval(() => {
+            getUser().then((result) => {
+              currUser = result;
+              let local_user = CustomState.getUserState(currUser.id);
+              let enemies = CustomState.getState().Enemies.filter((enemy) => {
+                console.log(enemy);
+                if (
+                  enemy.current_location ===
+                    local_user.character.current_location &&
+                  enemy.health > 0
+                ) {
+                  console.log("The enemy can see you");
+                  let enemyDamage = enemy.atk;
+                  local_user.character.char_health -= enemyDamage * 2;
+                  let attackMessage = `${enemy.name} attacked you for ${
+                    enemyDamage * 2
+                  } damage`;
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    { type: "system", message: `${attackMessage}` }, // updated line
+                  ]);
+                }
+              });
+            });
+          }, 2000); // Adjust interval length as necessary
+
+          // Cleanup function
+          return () => {
+            clearInterval(playerAttackInterval);
+            clearInterval(enemyAttackInterval);
+          };
         }
       });
     });

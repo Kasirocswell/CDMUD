@@ -147,31 +147,37 @@ io.on("connection", (socket) => {
           type: "system",
           message: `${command}`,
         });
+        io.emit("enemy check");
       } else if (
         command.toLowerCase() == "south" ||
         command.toLowerCase() == "s"
       ) {
         io.emit("move south");
+        io.emit("enemy check");
       } else if (
         command.toLowerCase() == "east" ||
         command.toLowerCase() == "e"
       ) {
         io.emit("move east");
+        io.emit("enemy check");
       } else if (
         command.toLowerCase() == "west" ||
         command.toLowerCase() == "w"
       ) {
         io.emit("move west");
+        io.emit("enemy check");
       } else if (
         command.toLowerCase() == "enter" ||
         command.toLowerCase() == "en"
       ) {
         io.emit("enter check");
+        io.emit("enemy check");
       } else if (
         command.toLowerCase() == "exit" ||
         command.toLowerCase() == "ex"
       ) {
         io.emit("exit check");
+        io.emit("enemy check");
       } else {
         io.emit("terminal update", {
           type: "system",

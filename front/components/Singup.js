@@ -123,6 +123,7 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
         }
       };
       // Initialize character
+
       const { data: userData, error: insertError } = await supabase
         .from("Char")
         .insert([{ uid: currUser.id }]);
