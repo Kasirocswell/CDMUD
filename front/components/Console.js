@@ -139,6 +139,9 @@ export default function Home() {
     });
     // Character Check - Title
     let nameProcess = false;
+    let raceProcess = false;
+    let classProcess = false;
+    let attributesProcess = false;
     socket.on("character check", async () => {
       console.log("Character Check");
       console.log(CustomState.getState());
@@ -154,10 +157,23 @@ export default function Home() {
         if (gameState === GAME_STATES.NAME && nameProcess == false) {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: `Here we want character name` }, // updated line
+            { type: "system", message: `Here we want character name message` }, // updated line
           ]);
           console.log("Name Creation");
+          socket.emit("character check");
           nameProcess = true;
+        }
+
+        if (gameState === GAME_STATES.RACE && raceProcess == false) {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Here we want race selection message`,
+            }, // updated line
+          ]);
+
+          // set race in supabase and CustomState
         }
       });
     });

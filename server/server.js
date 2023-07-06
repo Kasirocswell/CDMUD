@@ -25,6 +25,10 @@ io.on("connection", (socket) => {
   io.emit("title");
   io.emit("character check");
 
+  socket.on("character check", () => {
+    io.emit("character check");
+  });
+
   socket.on("first look", () => {
     io.emit("look");
   });
