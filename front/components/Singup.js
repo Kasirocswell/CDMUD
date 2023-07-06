@@ -32,18 +32,15 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
       currUser = result;
 
       const createCharacter = async () => {
-        let characterName = window.prompt("Enter your character name: ", "");
-        const { data: char_name, error } = await supabase
-          .from("Char")
-          .update({ char_name: characterName })
-          .match({ uid: currUser.id });
+        // const { data: char_name, error } = await supabase
+        //   .from("Char")
+        //   .update({ char_name: characterName })
+        //   .match({ uid: currUser.id });
 
-        const setRace = raceSelector();
-
-        const { data: selectedRace, error2 } = await supabase
-          .from("Char")
-          .update({ char_race: setRace })
-          .match({ uid: currUser.id });
+        // const { data: selectedRace, error2 } = await supabase
+        //   .from("Char")
+        //   .update({ char_race: setRace })
+        //   .match({ uid: currUser.id });
 
         const { data: startingPoint, error4 } = await supabase
           .from("Char")

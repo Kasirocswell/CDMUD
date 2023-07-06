@@ -133,6 +133,10 @@ export default function Home() {
       ]);
     });
 
+    // Game title here
+    socket.on("title", () => {
+      console.log("Title goes here");
+    });
     // Character Check - Title
     socket.on("character check", async () => {
       console.log("character check");
