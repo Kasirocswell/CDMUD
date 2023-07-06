@@ -4,6 +4,7 @@ import supabase from "../utils/supabase";
 import { title } from "./AsciiArt";
 import backgroundImage from "../public/space.jpg";
 import CustomState from "../store/CustomState";
+import { GAME_STATES } from "../store/CustomState";
 
 let socket;
 
@@ -13,6 +14,7 @@ export default function Home() {
   const [terminal, setTerminal] = useState([]);
   const chatEndRef = useRef(null);
   const didRun = useRef(false);
+  let gameState = CustomState.getGameState();
 
   const getUser = async () => {
     const {
@@ -96,7 +98,6 @@ export default function Home() {
   // Listening Events UseEffect
   useEffect(() => {
     socket = io("http://localhost:3000");
-
     socket.on("chat message", (msg) => {
       getUser().then((result) => {
         console.log(result);
@@ -133,13 +134,32 @@ export default function Home() {
       ]);
     });
 
-    // Game title here
     socket.on("title", () => {
       console.log("Title goes here");
     });
     // Character Check - Title
+    let nameProcess = false;
     socket.on("character check", async () => {
-      console.log("character check");
+      console.log("Character Check");
+      console.log(CustomState.getState());
+      getUser().then(async (result) => {
+        currUser = result;
+
+        const { data: characterData, dataError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id)
+          .single();
+
+        if (gameState === GAME_STATES.NAME && nameProcess == false) {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `Here we want character name` }, // updated line
+          ]);
+          console.log("Name Creation");
+          nameProcess = true;
+        }
+      });
     });
 
     // System Command Event Listener functions
@@ -1190,8 +1210,58 @@ export default function Home() {
 
   const submit = (e) => {
     e.preventDefault();
+    const gameState = CustomState.getState().gameState;
+
     if (socket) {
-      socket.emit("game command", message);
+      if (gameState === GAME_STATES.NAME) {
+        console.log("CHARACTER NAME");
+        console.log(message);
+        getUser().then(async (result) => {
+          currUser = result;
+          let local_user = CustomState.getUserState(currUser.id);
+          const { data: char_name, error } = await supabase
+            .from("Char")
+            .update({ char_name: message })
+            .match({ uid: currUser.id });
+
+          if (error) {
+            console.log(error);
+            console.log("There has been an error saving the name to supabase");
+          }
+
+          CustomState.dispatch({
+            type: "UPDATE_USER",
+            payload: {
+              userId: currUser.id,
+              data: {
+                character: {
+                  ...local_user.character,
+                  name: message,
+                },
+              },
+            },
+          });
+        });
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          { type: "system", message: `Your name is now set to ${message}` }, // updated line
+        ]);
+        CustomState.dispatch({
+          type: "UPDATE_GAME_STATE",
+          payload: GAME_STATES.RACE, // Or whatever the next game state is
+        });
+      } else if (gameState === GAME_STATES.RACE) {
+        console.log("Now we put the race logic here");
+      } else if (gameState === GAME_STATES.CLASS) {
+        socket.emit("character creation class", { type: gameState, message });
+      } else if (gameState === GAME_STATES.ATTRIBUTES) {
+        socket.emit("character creation attributes", {
+          type: gameState,
+          charAttributes,
+        });
+      } else {
+        socket.emit("game command", message);
+      }
       setMessage("");
     }
   };

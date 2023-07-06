@@ -1,8 +1,17 @@
+export const GAME_STATES = {
+  NAME: "NAME",
+  RACE: "RACE",
+  CLASS: "CLASS",
+  ATTRIBUTES: "ATTRIBUTES",
+  GAME: "GAME",
+};
+
 let state = {
   users: {},
   items: [],
   loot: [],
   currentEnemies: {},
+  gameState: GAME_STATES.NAME,
 };
 
 let listeners = [];
@@ -26,6 +35,8 @@ const CustomState = {
         state.Enemies = state.Enemies.map((enemy) =>
           enemy.id === enemyId ? { ...enemy, ...data } : enemy
         );
+      } else if (action.type === "UPDATE_GAME_STATE") {
+        state.gameState = action.payload;
       } else if (action.type === "SET_CURRENT_ENEMIES") {
         const { data } = action.payload;
         state.currentEnemies = data;
@@ -60,6 +71,10 @@ const CustomState = {
   printState: () => {
     console.log("current state");
     console.log(state);
+  },
+
+  getGameState: () => {
+    return state.gameState;
   },
 
   getRoomState: () => {

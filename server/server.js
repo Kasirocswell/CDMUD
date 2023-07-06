@@ -16,18 +16,18 @@ const io = new Server(server, {
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
+let nameLoaded = false;
+let raceLoaded = false;
+let gameLoaded = false;
 
 io.on("connection", (socket) => {
   console.log("A client connected");
-  // On Connection Init Events
+  io.emit("title");
   io.emit("character check");
-  io.emit("terminal update", {
-    type: "global",
-    message: `Welcome to Celestial Deep`,
+
+  socket.on("first look", () => {
+    io.emit("look");
   });
-  setTimeout(() => {
-    io.emit("look check");
-  }, 3000);
 
   // On Game Command from Console.js
   socket.on("game command", (command) => {
@@ -44,6 +44,11 @@ io.on("connection", (socket) => {
     } else if (command.type == "global") {
       io.emit("terminal update", {
         type: "global",
+        message: `${command}`,
+      });
+    } else if (command.type == "character_update") {
+      io.emit("terminal update", {
+        type: "name_update",
         message: `${command}`,
       });
     } else {

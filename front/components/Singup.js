@@ -36,43 +36,37 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
         //   .from("Char")
         //   .update({ char_name: characterName })
         //   .match({ uid: currUser.id });
-
         // const { data: selectedRace, error2 } = await supabase
         //   .from("Char")
         //   .update({ char_race: setRace })
         //   .match({ uid: currUser.id });
-
         const { data: startingPoint, error4 } = await supabase
           .from("Char")
           .update({ current_location: "Holding Cells" })
           .match({ uid: currUser.id });
-
         const { data: characterData, dataError } = await supabase
           .from("Char")
           .select()
           .eq("uid", currUser.id)
           .single();
-
         const { data: equipmentData, equipmentDataError } = await supabase
           .from("Equipment")
           .select()
           .eq("uid", currUser.id)
           .single();
-
         const { data: attributesData, attributesDataError } = await supabase
           .from("Attributes")
           .select()
           .eq("uid", currUser.id)
           .single();
-
         CustomState.dispatch({
           type: "UPDATE_USER",
           payload: {
             userId: currUser.id,
             data: {
               character: {
-                name: `${characterData.char_name}`,
-                race: `${characterData.char_race}`,
+                name: null,
+                race: null,
                 health: `${characterData.char_health}`,
                 level: `${characterData.char_level}`,
                 xp: `${characterData.char_xp}`,
@@ -102,49 +96,52 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
         });
       };
 
-      const raceSelector = () => {
-        let raceSelection = window.prompt(
-          "Enter your character Race(1-4): ",
-          ""
-        );
-        if (raceSelection == 1) {
-          return "Human";
-        } else if (raceSelection == 2) {
-          return "Draconian";
-        } else if (raceSelection == 3) {
-          return "Ventari";
-        } else if (raceSelection == 4) {
-          return "Dosha";
-        } else {
-          raceSelector();
-        }
-      };
+      // const raceSelector = () => {
+      //   let raceSelection = window.prompt(
+      //     "Enter your character Race(1-4): ",
+      //     ""
+      //   );
+      //   if (raceSelection == 1) {
+      //     return "Human";
+      //   } else if (raceSelection == 2) {
+      //     return "Draconian";
+      //   } else if (raceSelection == 3) {
+      //     return "Ventari";
+      //   } else if (raceSelection == 4) {
+      //     return "Dosha";
+      //   } else {
+      //     raceSelector();
+      //   }
+      // };
       // Initialize character
 
-      const { data: userData, error: insertError } = await supabase
-        .from("Char")
-        .insert([{ uid: currUser.id }]);
+      getUser().then(async (result) => {
+        currUser = result;
+        const { data: userData, error: insertError } = await supabase
+          .from("Char")
+          .insert([{ uid: currUser.id }]);
 
-      const { data: equipmentData, error: equipmentError } = await supabase
-        .from("Equipment")
-        .insert([{ uid: currUser.id }]);
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from("Equipment")
+          .insert([{ uid: currUser.id }]);
 
-      const { data: attributesData, error: attributesError } = await supabase
-        .from("Attributes")
-        .insert([{ uid: currUser.id }]);
+        const { data: attributesData, error: attributesError } = await supabase
+          .from("Attributes")
+          .insert([{ uid: currUser.id }]);
 
-      const { data: startingPoint, error4 } = await supabase
-        .from("Char")
-        .update({ current_location: "Holding Cells" })
-        .match({ uid: currUser.id });
+        const { data: startingPoint, error4 } = await supabase
+          .from("Char")
+          .update({ current_location: "Holding Cells" })
+          .match({ uid: currUser.id });
 
-      if (error) {
-        console.log(error);
-      } else {
-        console.log("Success! Check your email for a confirmation link.");
-        createCharacter();
-        LoggedIn();
-      }
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Success! Check your email for a confirmation link.");
+          createCharacter();
+          LoggedIn();
+        }
+      });
     });
   };
   return (
