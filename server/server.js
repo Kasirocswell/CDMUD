@@ -138,15 +138,7 @@ io.on("connection", (socket) => {
         command.toLowerCase() == "north" ||
         command.toLowerCase() == "n"
       ) {
-        console.log(
-          "move command received from client for direction:",
-          command
-        );
-        // Then emit the itemName to the client
-        io.emit("move north", {
-          type: "system",
-          message: `${command}`,
-        });
+        io.emit("move north");
         io.emit("enemy check");
       } else if (
         command.toLowerCase() == "south" ||

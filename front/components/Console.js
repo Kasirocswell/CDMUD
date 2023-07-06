@@ -12,6 +12,7 @@ export default function Home() {
   const [getData, setData] = useState("");
   const [terminal, setTerminal] = useState([]);
   const chatEndRef = useRef(null);
+  const didRun = useRef(false);
 
   const getUser = async () => {
     const {
@@ -564,7 +565,10 @@ export default function Home() {
             { type: "system", message: `You dropped ${itemNameCapitalized}` }, // updated line
           ]);
         } else {
-          console.log("You don't have that item");
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You don't have that item.` }, // updated line
+          ]);
         }
       });
     });
@@ -615,32 +619,17 @@ export default function Home() {
           ]);
         } else {
           console.log("You don't have that item");
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `You don't have that item.` }, // updated line
+          ]);
         }
       });
     });
     socket.on("enemy check", () => {
-      let enemyHealth;
-      getUser().then((result) => {
-        currUser = result;
-        let local_user = CustomState.getUserState(currUser.id);
-        CustomState.getState().Enemies.filter((enemy) => {
-          if (
-            enemy.current_location === local_user.character.current_location
-          ) {
-            setTerminal((prevTerminal) => [
-              ...prevTerminal,
-              {
-                type: "system",
-                message: `${enemy.name} glares at you angrily.`,
-              },
-            ]);
-          } else {
-            console.log("something went horribly wrong");
-          }
-        });
-      });
+      let enemyHealth = null;
 
-      function autoAttack() {
+      function enemyBark() {
         getUser().then((result) => {
           currUser = result;
           let local_user = CustomState.getUserState(currUser.id);
@@ -651,10 +640,35 @@ export default function Home() {
               enemy.health > 0 &&
               local_user.character.health > 0
             ) {
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `${enemy.name} stares are you while grinding his teeth.`,
+                }, // updated line
+              ]);
+            }
+          });
+        });
+      }
+
+      function autoAttack() {
+        getUser().then((result) => {
+          currUser = result;
+          let local_user = CustomState.getUserState(currUser.id);
+          let enemies = CustomState.getState().Enemies.filter((enemy) => {
+            if (
+              enemy.current_location ===
+                local_user.character.current_location &&
+              enemy.health > 0 &&
+              local_user.character.health > 0 &&
+              enemyHealth == null
+            ) {
               enemyHealth = Number(enemy.health);
             }
           });
         });
+
         // Enemy attack
         setTimeout(function () {
           const enemyAttackInterval = setInterval(() => {
@@ -692,11 +706,17 @@ export default function Home() {
                       },
                     },
                   });
-                  console.log("END OF ENEMY ROUND");
-                  console.log(playerHealth);
+                } else if (enemyHealth == null) {
                 } else {
                   clearInterval(playerAttackInterval);
                   clearInterval(enemyAttackInterval);
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    {
+                      type: "system",
+                      message: `${local_user.character.name} was killed by ${enemy.name}`,
+                    }, // updated line
+                  ]);
                 }
               });
             });
@@ -722,13 +742,17 @@ export default function Home() {
                     ...prevTerminal,
                     { type: "system", message: `${attackMessage}` }, // updated line
                   ]);
-
-                  console.log("END OF PLAYER ROUND");
-                  console.log(enemyHealth);
-                  console.log(CustomState.getState().Enemies);
+                } else if (enemyHealth == null) {
                 } else {
                   clearInterval(playerAttackInterval);
                   clearInterval(enemyAttackInterval);
+                  setTerminal((prevTerminal) => [
+                    ...prevTerminal,
+                    {
+                      type: "system",
+                      message: `${local_user.character.name} killed the ${enemy.name}`,
+                    }, // updated line
+                  ]);
                 }
               });
             });
@@ -739,9 +763,14 @@ export default function Home() {
             clearInterval(playerAttackInterval);
             clearInterval(enemyAttackInterval);
           };
-        }, 12000);
+        }, 6000);
       }
       autoAttack();
+
+      if (!didRun.current) {
+        setTimeout(enemyBark, 3000);
+        didRun.current = true;
+      }
     });
     socket.on("attack check", (target) => {
       // check if target is in the room
