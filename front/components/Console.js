@@ -5,6 +5,7 @@ import { title } from "./AsciiArt";
 import backgroundImage from "../public/space.jpg";
 import CustomState from "../store/CustomState";
 import { GAME_STATES } from "../store/CustomState";
+import { raceMessage } from "./RaceMessage";
 
 let socket;
 
@@ -138,10 +139,10 @@ export default function Home() {
       console.log("Title goes here");
     });
     // Character Check - Title
-    let nameProcess = false;
-    let raceProcess = false;
-    let classProcess = false;
-    let attributesProcess = false;
+    const { nameProcess, setNameProcess } = useState(false);
+    const { raceProcess, setRaceProcess } = useState(false);
+    const { classProcess, setClassProcess } = useState(false);
+    const { attributesProcess, setAttributesProcess } = useState(false);
     socket.on("character check", async () => {
       console.log("Character Check");
       console.log(CustomState.getState());
@@ -169,10 +170,10 @@ export default function Home() {
             ...prevTerminal,
             {
               type: "system",
-              message: `Here we want race selection message`,
+              message: raceMessage,
             }, // updated line
           ]);
-
+          socket.emit("character check");
           // set race in supabase and CustomState
         }
       });
@@ -1266,8 +1267,170 @@ export default function Home() {
           type: "UPDATE_GAME_STATE",
           payload: GAME_STATES.RACE, // Or whatever the next game state is
         });
+        socket.emit("character check");
       } else if (gameState === GAME_STATES.RACE) {
-        console.log("Now we put the race logic here");
+        if (message == 1) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_race, error } = await supabase
+              .from("Char")
+              .update({ char_race: `Human` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the name to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    race: `Human`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `Your race is now set to Human.` }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.CLASS, // Or whatever the next game state is
+          });
+          setraceProcess = true;
+        } else if (message == 2) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_race, error } = await supabase
+              .from("Char")
+              .update({ char_race: `Draconian` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the name to supabase"
+              );
+            }
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    race: `Draconian`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `Your race is now set to Draconian.` }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.CLASS, // Or whatever the next game state is
+          });
+          setraceProcess = true;
+        } else if (message == 3) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_race, error } = await supabase
+              .from("Char")
+              .update({ char_race: `Ventari` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the name to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    race: `Ventari`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `Your race is now set to Ventari.` }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.CLASS, // Or whatever the next game state is
+          });
+          raceProcess = true;
+        } else if (message == 4) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_race, error } = await supabase
+              .from("Char")
+              .update({ char_race: `Dosha` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the name to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    race: `Dosha`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `Your race is now set to Dosha.` }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.CLASS, // Or whatever the next game state is
+          });
+          raceProcess = true;
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `That is not a race. Please select 1 - 4.`,
+            }, // updated line
+          ]);
+          raceProcess = false;
+          socket.emit("character check");
+        }
       } else if (gameState === GAME_STATES.CLASS) {
         socket.emit("character creation class", { type: gameState, message });
       } else if (gameState === GAME_STATES.ATTRIBUTES) {
