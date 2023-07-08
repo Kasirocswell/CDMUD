@@ -857,135 +857,30 @@ export default function Home() {
         didRun.current = true;
       }
     });
+
+    // ATTACK FUNCTION HERE
     socket.on("attack check", (target) => {
-      // check if target is in the room
-      // check if target is alive
-      // check if target can be attacked
-      // start battle sequence
-      // when one party's health reaches zero end battle sequence
-      // make battle results announcement
-      // drop loot, set loot system
-      // remove enemy from the room
-      // create respawn system from enemies
-      let targetMessage = target.message;
-      let targetNameCapitalized = targetMessage
-        .toLowerCase()
-        .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
-        .join(" ");
-
-      getUser().then((result) => {
-        let currUser = result;
-        let local_user = CustomState.getUserState(currUser.id);
-
-        // Check if the enemy is in the room
-        let enemies = CustomState.getState().Enemies.filter((enemy) => {
-          return (
-            enemy.current_location == local_user.character.current_location
-          );
-        });
-
-        let targetedEnemy = enemies[0];
-
-        // check if target is alive
-        let targetAlive;
-        if (targetedEnemy.health > 0) {
-          targetAlive = true;
-        } else {
-          targetAlive = false;
-        }
-        let canAttack = false;
-        if (targetedEnemy.can_attack) {
-          canAttack = true;
-        } else {
-          canAttack = false;
-        }
-        let playerAlive;
-        if (local_user.character.health > 0) {
-          playerAlive = true;
-        } else {
-          playerAlive = false;
-        }
-        let totalDamage;
-        let natDamage = local_user.attributes.str * 2;
-        totalDamage = natDamage;
-        let weaponRightHand = CustomState.getWeaponState().filter((weapon) => {
-          return weapon.name == local_user.equipment.right_hand;
-        });
-        let weaponLeftHand = "Empty";
-        if (weaponRightHand != "Empty") {
-          totalDamage += weaponRightHand.atk;
-        }
-        if (weaponLeftHand != "Empty") {
-          totalDamage += weaponLeftHand.atk;
-        }
-        let autoAttackInterval = null;
-        if (playerAlive && targetAlive && canAttack) {
-          autoAttack();
-        } else {
-          console.log("You can't attack that.");
-        }
-
-        function autoAttack() {
-          // Player attack
-          const playerAttackInterval = setInterval(() => {
-            getUser().then((result) => {
-              currUser = result;
-              let local_user = CustomState.getUserState(currUser.id);
-              let enemies = CustomState.getState().Enemies.filter((enemy) => {
-                console.log(enemy);
-                if (
-                  enemy.current_location ===
-                    local_user.character.current_location &&
-                  enemy.health > 0
-                ) {
-                  console.log("You can see the enemy");
-                  let enemyDamage = 10;
-                  enemy.health -= enemyDamage;
-                  let attackMessage = `You attacked ${enemy.name} for ${enemyDamage} damage`;
-                  setTerminal((prevTerminal) => [
-                    ...prevTerminal,
-                    { type: "system", message: `${attackMessage}` }, // updated line
-                  ]);
-                }
-              });
-            });
-          }, 1000); // Adjust interval length as necessary
-
-          // Enemy attack
-          const enemyAttackInterval = setInterval(() => {
-            getUser().then((result) => {
-              currUser = result;
-              let local_user = CustomState.getUserState(currUser.id);
-              let enemies = CustomState.getState().Enemies.filter((enemy) => {
-                console.log(enemy);
-                if (
-                  enemy.current_location ===
-                    local_user.character.current_location &&
-                  enemy.health > 0
-                ) {
-                  console.log("The enemy can see you");
-                  let enemyDamage = enemy.atk;
-                  local_user.character.char_health -= enemyDamage * 2;
-                  let attackMessage = `${enemy.name} attacked you for ${
-                    enemyDamage * 2
-                  } damage`;
-                  setTerminal((prevTerminal) => [
-                    ...prevTerminal,
-                    { type: "system", message: `${attackMessage}` }, // updated line
-                  ]);
-                }
-              });
-            });
-          }, 2000); // Adjust interval length as necessary
-
-          // Cleanup function
-          return () => {
-            clearInterval(playerAttackInterval);
-            clearInterval(enemyAttackInterval);
-          };
-        }
-      });
+      // get current location
+      // current enemy id
+      // attack timer starts the moment player enters room and only if enemies are in the room
+      // player enters room and inspects the enemy to get current power levels of enemy
+      // player can attack or run
+      // player can't run until after attack sequence begins
+      // when player enters room, player and enemy become aware of eachother
+      // enemy will attack first if fast enough
+      // when an enemy enters combat, push enemy into combat state and player into enemies list
+      // auto attack begins (during combat game state, player will be given a dice roll, rolling above preset number will allow user to run, rolling below will not, include cool down for run)
+      // if player rolls for run, attack sequence ends (player is moved to a random room)
+      // if player rolls for no run, attack sequence continues (player can still reroll)
+      /////////////////////// *** WHEN PLAYER DIES *** ///////////////////////////
+      // message "You Died"
+      // all player loot is dropped current room
+      // player is sent to respawn point with nothing
+      /////////////////////// *** WHEN ENEMY DIES *** ///////////////////////////
+      // message "Enemy Killed"
+      // enemy loot dropped
+      // player can pick it up or leave it
+      // enemy is on cool down for preset time
     });
     socket.on("yield check", () => {});
     socket.on("use check", (itemName) => {
