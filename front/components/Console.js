@@ -19,11 +19,11 @@ let socket;
 
 export default function Home() {
   const [message, setMessage] = useState("");
-  const [getData, setData] = useState("");
   const [terminal, setTerminal] = useState([]);
   const [rollCount, setRollCount] = useState(1);
   const chatEndRef = useRef(null);
   const didRun = useRef(false);
+  const firstLook = useRef(false);
   let gameState = CustomState.getGameState();
 
   const getUser = async () => {
@@ -98,6 +98,17 @@ export default function Home() {
       });
     }
   };
+
+  CustomState.dispatch({
+    type: "UPDATE_ENEMY_IN_TABLE",
+    payload: {
+      tableName: "Enemies", // Or whichever table name you are using
+      enemyId: 0, // The id of the enemy you want to update
+      data: {
+        name: "old man",
+      }, // The new data for the enemy
+    },
+  });
 
   setMap();
   setWeapons();
@@ -600,8 +611,8 @@ export default function Home() {
         let local_user = CustomState.getUserState(currUser.id);
         let newId = 10;
         let droppedItems = {
-          id: newId, // this needs to be unique, so you can't just use 0
-          created_at: new Date().toISOString(), // for current time in ISO format
+          id: newId,
+          created_at: new Date().toISOString(),
           room_name: local_user.character.current_location,
           item_name: itemNameCapitalized,
           Quantity: "1",
@@ -1265,41 +1276,65 @@ export default function Home() {
     if (socket) {
       let game_state = CustomState.getGameState();
       if (gameState === GAME_STATES.NAME) {
-        getUser().then(async (result) => {
-          currUser = result;
-          let local_user = CustomState.getUserState(currUser.id);
-          const { data: char_name, error } = await supabase
+        async function checkName() {
+          const { data: nameCheck, error } = await supabase
             .from("Char")
-            .update({ char_name: message })
-            .match({ uid: currUser.id });
+            .select("char_name");
 
-          if (error) {
-            console.log(error);
-            console.log("There has been an error saving the name to supabase");
-          }
-
-          CustomState.dispatch({
-            type: "UPDATE_USER",
-            payload: {
-              userId: currUser.id,
-              data: {
-                character: {
-                  ...local_user.character,
-                  name: message,
+          const isNameTaken = nameCheck.some(
+            (char) => char.char_name == message
+          );
+          if (isNameTaken) {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `This name is already in use, please try again`,
+              }, // updated line
+            ]);
+            socket.emit("character check");
+          } else {
+            getUser().then(async (result) => {
+              currUser = result;
+              let local_user = CustomState.getUserState(currUser.id);
+              const { data: char_name, error } = await supabase
+                .from("Char")
+                .update({ char_name: message })
+                .match({ uid: currUser.id });
+              if (error) {
+                console.log(error);
+                console.log(
+                  "There has been an error saving the name to supabase"
+                );
+              }
+              CustomState.dispatch({
+                type: "UPDATE_USER",
+                payload: {
+                  userId: currUser.id,
+                  data: {
+                    character: {
+                      ...local_user.character,
+                      name: message,
+                    },
+                  },
                 },
-              },
-            },
-          });
-        });
-        setTerminal((prevTerminal) => [
-          ...prevTerminal,
-          { type: "system", message: `Your name is now set to ${message}` }, // updated line
-        ]);
-        CustomState.dispatch({
-          type: "UPDATE_GAME_STATE",
-          payload: GAME_STATES.RACE, // Or whatever the next game state is
-        });
-        socket.emit("character check");
+              });
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `Your name is now set to ${message}`,
+                }, // updated line
+              ]);
+              CustomState.dispatch({
+                type: "UPDATE_GAME_STATE",
+                payload: GAME_STATES.RACE, // Or whatever the next game state is
+              });
+              socket.emit("character check");
+            });
+          }
+        }
+        checkName();
       } else if (game_state == "RACE") {
         if (message == 1) {
           getUser().then(async (result) => {
@@ -1884,8 +1919,6 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.GAME, // Or whatever the next game state is
           });
-          socket.emit("first look");
-          console.log("first look");
         } else if (message == "reroll" && rollCount < 4) {
           console.log("REROLLING");
           setRollCount(rollCount + 1);
@@ -1915,12 +1948,30 @@ export default function Home() {
             }, // updated line
           ]);
         }
+      } else if (game_state == "COMBAT") {
+      } else if (game_state == "DEAD") {
+      } else if (game_state == "STORE") {
+      } else if (game_state == "TRADE") {
       } else {
         socket.emit("game command", message);
       }
       setMessage("");
     }
   };
+
+  let game_state = CustomState.getGameState();
+  useEffect(() => {
+    function FirstLook() {
+      socket.emit("first look");
+      console.log("first look");
+    }
+    if (game_state == "GAME") {
+      if (!firstLook.current) {
+        setTimeout(FirstLook, 1000);
+        firstLook.current = true;
+      }
+    }
+  }, [game_state]);
 
   const colorSelector = (type) => {
     switch (type) {

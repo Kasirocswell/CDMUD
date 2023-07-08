@@ -4,14 +4,25 @@ export const GAME_STATES = {
   CLASS: "CLASS",
   ATTRIBUTES: "ATTRIBUTES",
   GAME: "GAME",
+  COMBAT: "COMBAT",
+  STORE: "STORE",
+  TRADE: "TRADE",
+  DEAD: "DEAD",
+};
+
+export const ENEMY_STATES = {
+  IDLE: "IDLE",
+  COMBAT: "COMBAT",
+  DEAD: "DEAD",
 };
 
 let state = {
   users: {},
   items: [],
   loot: [],
-  currentEnemies: {},
+  combatState: {},
   gameState: GAME_STATES.NAME,
+  enemyState: ENEMY_STATES.IDLE,
 };
 
 let listeners = [];

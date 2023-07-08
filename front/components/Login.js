@@ -2,6 +2,7 @@ import React from "react";
 import { useState } from "react";
 import supabase from "../utils/supabase";
 import CustomState from "../store/CustomState";
+import { GAME_STATES } from "../store/CustomState";
 
 const Login = ({ LoggedIn, tabsToggle }) => {
   const [email, setEmail] = useState("");
@@ -50,6 +51,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
           character: {
             name: `${characterData.char_name}`,
             race: `${characterData.char_race}`,
+            class: `${characterData.char_class}`,
             health: `${characterData.char_health}`,
             level: `${characterData.char_level}`,
             xp: `${characterData.char_xp}`,
@@ -71,11 +73,23 @@ const Login = ({ LoggedIn, tabsToggle }) => {
           attributes: {
             str: `${attributesData.str}`,
             spd: `${attributesData.spd}`,
+            def: `${attributesData.def}`,
+            int: `${attributesData.int}`,
+            end: `${attributesData.end}`,
+            agi: `${attributesData.agi}`,
+            cha: `${attributesData.cha}`,
+            lck: `${attributesData.lck}`,
+            wis: `${attributesData.wis}`,
+            per: `${attributesData.per}`,
           },
           inventory: [],
           vehicles: {},
         },
       },
+    });
+    CustomState.dispatch({
+      type: "UPDATE_GAME_STATE",
+      payload: GAME_STATES.GAME, // Or whatever the next game state is
     });
 
     LoggedIn();
