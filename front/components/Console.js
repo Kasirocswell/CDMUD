@@ -146,7 +146,10 @@ export default function Home() {
     });
     let game_state = CustomState.getGameState();
     socket.on("title", () => {
-      console.log("Title goes here");
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        { type: "system", message: title }, // updated line
+      ]);
     });
     // Character Check - Title
     let nameProcess = false;
@@ -1876,10 +1879,13 @@ export default function Home() {
             });
           }
           setAttributes();
+
           CustomState.dispatch({
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.GAME, // Or whatever the next game state is
           });
+          socket.emit("first look");
+          console.log("first look");
         } else if (message == "reroll" && rollCount < 4) {
           console.log("REROLLING");
           setRollCount(rollCount + 1);

@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("first look", () => {
-    io.emit("look");
+    io.emit("look check");
   });
 
   // On Game Command from Console.js
