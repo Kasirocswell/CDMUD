@@ -6,6 +6,14 @@ import backgroundImage from "../public/space.jpg";
 import CustomState from "../store/CustomState";
 import { GAME_STATES } from "../store/CustomState";
 import { raceMessage } from "./RaceMessage";
+import { ClassMessage } from "./ClassMessage";
+import {
+  createAttributesMessage,
+  AttributeMessage,
+  createAttributes,
+  attributes,
+  reroll,
+} from "./AttributeMessage";
 
 let socket;
 
@@ -13,6 +21,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [getData, setData] = useState("");
   const [terminal, setTerminal] = useState([]);
+  const [rollCount, setRollCount] = useState(1);
   const chatEndRef = useRef(null);
   const didRun = useRef(false);
   let gameState = CustomState.getGameState();
@@ -89,6 +98,7 @@ export default function Home() {
       });
     }
   };
+
   setMap();
   setWeapons();
   setArmor();
@@ -134,21 +144,21 @@ export default function Home() {
         { type: update.type, message: update.message }, // updated line
       ]);
     });
-
+    let game_state = CustomState.getGameState();
     socket.on("title", () => {
       console.log("Title goes here");
     });
     // Character Check - Title
-    const { nameProcess, setNameProcess } = useState(false);
-    const { raceProcess, setRaceProcess } = useState(false);
-    const { classProcess, setClassProcess } = useState(false);
-    const { attributesProcess, setAttributesProcess } = useState(false);
+    let nameProcess = false;
+    let raceProcess = false;
+    let classProcess = false;
+    let attributesProcess = false;
+
     socket.on("character check", async () => {
-      console.log("Character Check");
-      console.log(CustomState.getState());
       getUser().then(async (result) => {
         currUser = result;
-
+        console.log("GAME STATE NAME");
+        console.log(game_state);
         const { data: characterData, dataError } = await supabase
           .from("Char")
           .select()
@@ -160,12 +170,11 @@ export default function Home() {
             ...prevTerminal,
             { type: "system", message: `Here we want character name message` }, // updated line
           ]);
-          console.log("Name Creation");
-          socket.emit("character check");
           nameProcess = true;
+          socket.emit("character check");
         }
-
-        if (gameState === GAME_STATES.RACE && raceProcess == false) {
+        game_state = CustomState.getGameState();
+        if (game_state == "RACE" && raceProcess == false) {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
             {
@@ -173,8 +182,29 @@ export default function Home() {
               message: raceMessage,
             }, // updated line
           ]);
-          socket.emit("character check");
-          // set race in supabase and CustomState
+          raceProcess == true;
+        }
+        game_state = CustomState.getGameState();
+        if (game_state == "CLASS" && classProcess == false) {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: ClassMessage,
+            }, // updated line
+          ]);
+          classProcess == true;
+        }
+        game_state = CustomState.getGameState();
+        if (game_state == "ATTRIBUTES" && attributesProcess == false) {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: AttributeMessage,
+            }, // updated line
+          ]);
+          attributesProcess == true;
         }
       });
     });
@@ -1230,9 +1260,8 @@ export default function Home() {
     const gameState = CustomState.getState().gameState;
 
     if (socket) {
+      let game_state = CustomState.getGameState();
       if (gameState === GAME_STATES.NAME) {
-        console.log("CHARACTER NAME");
-        console.log(message);
         getUser().then(async (result) => {
           currUser = result;
           let local_user = CustomState.getUserState(currUser.id);
@@ -1268,7 +1297,7 @@ export default function Home() {
           payload: GAME_STATES.RACE, // Or whatever the next game state is
         });
         socket.emit("character check");
-      } else if (gameState === GAME_STATES.RACE) {
+      } else if (game_state == "RACE") {
         if (message == 1) {
           getUser().then(async (result) => {
             currUser = result;
@@ -1306,7 +1335,7 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.CLASS, // Or whatever the next game state is
           });
-          setraceProcess = true;
+          socket.emit("character check");
         } else if (message == 2) {
           getUser().then(async (result) => {
             currUser = result;
@@ -1343,7 +1372,7 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.CLASS, // Or whatever the next game state is
           });
-          setraceProcess = true;
+          socket.emit("character check");
         } else if (message == 3) {
           getUser().then(async (result) => {
             currUser = result;
@@ -1381,7 +1410,7 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.CLASS, // Or whatever the next game state is
           });
-          raceProcess = true;
+          socket.emit("character check");
         } else if (message == 4) {
           getUser().then(async (result) => {
             currUser = result;
@@ -1419,25 +1448,467 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.CLASS, // Or whatever the next game state is
           });
-          raceProcess = true;
+          socket.emit("character check");
         } else {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
             {
               type: "system",
-              message: `That is not a race. Please select 1 - 4.`,
+              message: `That is not an appropriate response. Please select 1 - 4.`,
             }, // updated line
           ]);
-          raceProcess = false;
           socket.emit("character check");
         }
       } else if (gameState === GAME_STATES.CLASS) {
-        socket.emit("character creation class", { type: gameState, message });
-      } else if (gameState === GAME_STATES.ATTRIBUTES) {
-        socket.emit("character creation attributes", {
-          type: gameState,
-          charAttributes,
-        });
+        if (message == 1) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Bounty Hunter` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Bounty Hunter`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Bounty Hunter.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 2) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Smuggler` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Smuggler`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Smuggler.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 3) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Pilot` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Pilot`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Pilot`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 4) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Soldier` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Soldier`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Soldier.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 5) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Medic` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Medic`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Medic.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 6) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Hacker` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Hacker`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Hacker.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 7) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Engineer` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Engineer`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Engineer.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else if (message == 8) {
+          getUser().then(async (result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            const { data: char_class, error } = await supabase
+              .from("Char")
+              .update({ char_class: `Operative` })
+              .match({ uid: currUser.id });
+
+            if (error) {
+              console.log(error);
+              console.log(
+                "There has been an error saving the class to supabase"
+              );
+            }
+
+            CustomState.dispatch({
+              type: "UPDATE_USER",
+              payload: {
+                userId: currUser.id,
+                data: {
+                  character: {
+                    ...local_user.character,
+                    class: `Operative`,
+                  },
+                },
+              },
+            });
+          });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Your class is now set to Operative.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.ATTRIBUTES, // Or whatever the next game state is
+          });
+          socket.emit("character check");
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `That isn't a valid class selection.  Please enter 1-8.`,
+            }, // updated line
+          ]);
+        }
+      } else if (game_state == "ATTRIBUTES") {
+        if (message == "keep" || message == "Keep") {
+          console.log("KEEPING");
+          async function setAttributes() {
+            getUser().then(async (result) => {
+              currUser = result;
+              const { data: att_str, str_error } = await supabase
+                .from("Attributes")
+                .update({ str: attributes.str })
+                .match({ uid: currUser.id });
+
+              const { data: att_def, def_error } = await supabase
+                .from("Attributes")
+                .update({ def: attributes.def })
+                .match({ uid: currUser.id });
+
+              const { data: att_spd, spd_error } = await supabase
+                .from("Attributes")
+                .update({ spd: attributes.spd })
+                .match({ uid: currUser.id });
+
+              const { data: att_int, int_error } = await supabase
+                .from("Attributes")
+                .update({ int: attributes.int })
+                .match({ uid: currUser.id });
+
+              const { data: att_end, end_error } = await supabase
+                .from("Attributes")
+                .update({ end: attributes.end })
+                .match({ uid: currUser.id });
+
+              const { data: att_agi, agi_error } = await supabase
+                .from("Attributes")
+                .update({ agi: attributes.agi })
+                .match({ uid: currUser.id });
+
+              const { data: att_wis, wis_error } = await supabase
+                .from("Attributes")
+                .update({ wis: attributes.wis })
+                .match({ uid: currUser.id });
+
+              const { data: att_cha, cha_error } = await supabase
+                .from("Attributes")
+                .update({ cha: attributes.cha })
+                .match({ uid: currUser.id });
+
+              const { data: att_lck, lck_error } = await supabase
+                .from("Attributes")
+                .update({ lck: attributes.lck })
+                .match({ uid: currUser.id });
+
+              const { data: att_per, per_error } = await supabase
+                .from("Attributes")
+                .update({ per: attributes.per })
+                .match({ uid: currUser.id });
+
+              CustomState.dispatch({
+                type: "UPDATE_USER",
+                payload: {
+                  userId: currUser.id,
+                  data: {
+                    attributes: {
+                      str: `${attributes.str}`,
+                      spd: `${attributes.spd}`,
+                      def: `${attributes.def}`,
+                      int: `${attributes.int}`,
+                      end: `${attributes.end}`,
+                      agi: `${attributes.agi}`,
+                      cha: `${attributes.cha}`,
+                      lck: `${attributes.lck}`,
+                      wis: `${attributes.wis}`,
+                      per: `${attributes.per}`,
+                    },
+                  },
+                },
+              });
+            });
+          }
+          setAttributes();
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.GAME, // Or whatever the next game state is
+          });
+        } else if (message == "reroll" && rollCount < 4) {
+          console.log("REROLLING");
+          setRollCount(rollCount + 1);
+          console.log(rollCount);
+          reroll();
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: AttributeMessage,
+            }, // updated line
+          ]);
+        } else if (rollCount >= 4) {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You've used your last reroll.  Please keep your attributes.`,
+            }, // updated line
+          ]);
+        } else {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `That isn't a valid selection.  Please "keep" or "reroll"`,
+            }, // updated line
+          ]);
+        }
       } else {
         socket.emit("game command", message);
       }

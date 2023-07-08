@@ -67,6 +67,7 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
               character: {
                 name: null,
                 race: null,
+                class: null,
                 health: `${characterData.char_health}`,
                 level: `${characterData.char_level}`,
                 xp: `${characterData.char_xp}`,
@@ -88,6 +89,14 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
               attributes: {
                 str: `${attributesData.str}`,
                 spd: `${attributesData.spd}`,
+                def: `${attributesData.def}`,
+                int: `${attributesData.int}`,
+                end: `${attributesData.end}`,
+                agi: `${attributesData.agi}`,
+                cha: `${attributesData.cha}`,
+                lck: `${attributesData.lck}`,
+                wis: `${attributesData.wis}`,
+                per: `${attributesData.per}`,
               },
               inventory: [],
               vehicles: {},
