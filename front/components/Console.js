@@ -964,7 +964,10 @@ export default function Home() {
 
         const matchedEnemies = CustomState.getState().Enemies.map((enemy) => {
           if (enemy) {
-            if (enemy.name.toLowerCase() == targetName) {
+            if (
+              enemy.name.toLowerCase() == targetName &&
+              enemy.current_location == local_user.character.current_location
+            ) {
               console.log("enemy found");
               return enemy;
             } else {
