@@ -112,6 +112,8 @@ export default function Home() {
   // });
 
   let combatTimers = {};
+  let enemyHealth;
+  let playerHealth;
 
   async function endCombat(enemy) {
     let combatState = CustomState.getState().combatState;
@@ -128,14 +130,18 @@ export default function Home() {
   }
 
   async function playerAttack(player, enemy) {
+    enemyHealth -= 25;
     console.log(`${player.name} Attacks the ${enemy.name}`);
+    console.log(enemyHealth);
   }
 
   async function enemyAttack(enemy, player) {
+    playerHealth -= 10;
     console.log(`${enemy.name} Attacks ${player.name}`);
+    console.log(playerHealth);
   }
 
-  async function performEnemyCombatAction(enemy) {
+  async function performEnemyCombatAction(player, enemy) {
     let combatState = CustomState.getState().combatState;
     let players = combatState[enemy.id];
 
@@ -150,24 +156,50 @@ export default function Home() {
   }
 
   function startEnemyCombatTimer(player, enemy) {
-    let combatInterval = 2000;
+    let combatInterval = 5000 - 40 * enemy.speed;
     combatTimers[enemy.id] = setInterval(async () => {
-      await performEnemyCombatAction(enemy);
       // check if player is dead here
+      if (playerHealth > 0) {
+        await performEnemyCombatAction(player, enemy);
+      } else {
+        // end combat
+        endCombat(enemy);
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: `The ${enemy.name} has killed ${player.name}.`,
+          }, // updated line
+        ]);
+      }
     }, combatInterval);
   }
 
   function startPlayerCombatTimer(player, enemy) {
-    let combatInterval = 2000;
+    let combatInterval = 5000 - 40 * player.speed;
     combatTimers[enemy.id] = setInterval(async () => {
       await performPlayerCombatAction(player, enemy);
       // check if enemy is dead here
+      if (enemyHealth > 0) {
+        await performPlayerCombatAction(player, enemy);
+      } else {
+        // end combat
+        endCombat(enemy);
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: `The ${player.name} has killed ${enemy.name}.`,
+          }, // updated line
+        ]);
+      }
     }, combatInterval);
   }
 
   function enterCombat(player, enemy) {
     let combatState = CustomState.getState().combatState;
-
+    playerHealth = player.health;
+    enemyHealth = enemy.health;
     if (combatState[enemy.id]) {
       combatState[enemy.id].push(player);
     } else {
@@ -264,7 +296,10 @@ export default function Home() {
         if (gameState === GAME_STATES.NAME && nameProcess == false) {
           setTerminal((prevTerminal) => [
             ...prevTerminal,
-            { type: "system", message: `Here we want character name message` }, // updated line
+            {
+              type: "system",
+              message: `Enter your name! Choose wisely, this is permanent!`,
+            }, // updated line
           ]);
           nameProcess = true;
           socket.emit("character check");
