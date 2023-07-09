@@ -41,6 +41,8 @@ const CustomState = {
       } else if (action.type === "SET_TABLE_DATA") {
         const { tableName, data } = action.payload;
         state[tableName] = data;
+      } else if (action.type === "UPDATE_COMBAT_STATE") {
+        state.combatState = action.payload;
       } else if (action.type === "UPDATE_ENEMY") {
         const { enemyId, data } = action.payload;
         state.Enemies = state.Enemies.map((enemy) =>
@@ -51,19 +53,6 @@ const CustomState = {
       } else if (action.type === "SET_CURRENT_ENEMIES") {
         const { data } = action.payload;
         state.currentEnemies = data;
-      } else if (action.type === "UPDATE_ENEMY_IN_TABLE") {
-        const { tableName, enemyId, data } = action.payload;
-        const enemyTable = state[tableName];
-        const enemyIndex = enemyTable.findIndex(
-          (enemy) => enemy.id === enemyId
-        );
-        if (enemyIndex >= 0) {
-          state[tableName] = [
-            ...enemyTable.slice(0, enemyIndex),
-            { ...enemyTable[enemyIndex], ...data },
-            ...enemyTable.slice(enemyIndex + 1),
-          ];
-        }
       } else {
         state = { ...state, ...action };
       }

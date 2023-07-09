@@ -23,14 +23,12 @@ const Login = ({ LoggedIn, tabsToggle }) => {
       return;
     }
 
-    console.log("User Logged In");
     const { data: characterData, charDataError } = await supabase
       .from("Char")
       .select()
       .eq("uid", currUser.id)
       .single();
 
-    console.log("User Logged In");
     const { data: equipmentData, eqDataError } = await supabase
       .from("Equipment")
       .select()

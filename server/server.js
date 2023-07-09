@@ -16,9 +16,6 @@ const io = new Server(server, {
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
-let nameLoaded = false;
-let raceLoaded = false;
-let gameLoaded = false;
 
 io.on("connection", (socket) => {
   console.log("A client connected");
