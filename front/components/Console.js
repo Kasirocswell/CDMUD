@@ -100,17 +100,6 @@ export default function Home() {
     }
   };
 
-  // CustomState.dispatch({
-  //   type: "UPDATE_ENEMY_IN_TABLE",
-  //   payload: {
-  //     tableName: "Enemies", // Or whichever table name you are using
-  //     enemyId: 0, // The id of the enemy you want to update
-  //     data: {
-  //       name: "old man",
-  //     }, // The new data for the enemy
-  //   },
-  // });
-
   let combatTimers = {};
   let enemyHealth;
   let playerHealth;
@@ -126,42 +115,103 @@ export default function Home() {
         type: "UPDATE_COMBAT_STATE",
         payload: combatState,
       });
+
+      CustomState.dispatch({
+        type: "UPDATE_GAME_STATE",
+        payload: GAME_STATES.GAME, // Or whatever the next game state is
+      });
     }
   }
 
   async function playerAttack(player, enemy) {
-    enemyHealth -= 25;
-    console.log(`${player.name} Attacks the ${enemy.name}`);
-    console.log(enemyHealth);
+    await getUser().then((result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      let weaponRight = local_user.equipment.right_hand;
+      let weaponLeft = local_user.equipment.left_hand;
+      let weaponRightDamage = CustomState.getWeaponState().map((weapon) => {
+        if (weaponRight == weapon.name) {
+          return Number(weapon.atk);
+        }
+      });
+      let totalDamage =
+        Number(local_user.attributes.str) + Number(weaponRightDamage);
+
+      enemyHealth -= totalDamage;
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        {
+          type: "system",
+          message: `${player.name} attacked ${enemy.name} for ${totalDamage} damage.`,
+        }, // updated line
+      ]);
+    });
   }
 
   async function enemyAttack(enemy, player) {
-    playerHealth -= 10;
-    console.log(`${enemy.name} Attacks ${player.name}`);
-    console.log(playerHealth);
+    playerHealth -= enemy.atk;
+    setTerminal((prevTerminal) => [
+      ...prevTerminal,
+      {
+        type: "system",
+        message: `${enemy.name} attacked ${player.name} for ${enemy.atk} damage.`,
+      }, // updated line
+    ]);
+
+    getUser().then((result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      CustomState.dispatch({
+        type: "UPDATE_USER",
+        payload: {
+          userId: currUser.id,
+          data: {
+            character: {
+              ...local_user.character,
+              health: playerHealth,
+            },
+          },
+        },
+      });
+    });
   }
 
   async function performEnemyCombatAction(player, enemy) {
-    let combatState = CustomState.getState().combatState;
-    let players = combatState[enemy.id];
+    let game_state = CustomState.getGameState();
+    getUser().then(async (result) => {
+      currUser = result;
+      let local_user_health = CustomState.getUserState(currUser.id).character
+        .health;
+      if (local_user_health > 0 && game_state == "COMBAT") {
+        let combatState = CustomState.getState().combatState;
+        let players = combatState[enemy.id];
 
-    // pick a target and attack
-    let target = players[Math.floor(Math.random() * players.length)];
-    await enemyAttack(enemy, target);
+        // pick a target and attack
+        let target = players[Math.floor(Math.random() * players.length)];
+        await enemyAttack(enemy, target);
+      } else {
+        endCombat(enemy);
+      }
+    });
   }
 
   async function performPlayerCombatAction(player, enemy) {
-    let combatState = CustomState.getState().combatState;
-    await playerAttack(player, enemy);
+    let game_state = CustomState.getGameState();
+    if (playerHealth > 0 && game_state == "COMBAT") {
+      let combatState = CustomState.getState().combatState;
+      await playerAttack(player, enemy);
+    }
   }
 
   function startEnemyCombatTimer(player, enemy) {
-    let combatInterval = 5000 - 40 * enemy.speed;
+    let trueSpeed = 40 * enemy.speed;
+    let combatInterval = 5000 - trueSpeed;
+    let game_state = CustomState.getGameState();
     combatTimers[enemy.id] = setInterval(async () => {
       // check if player is dead here
-      if (playerHealth > 0) {
+      if (playerHealth > 0 && game_state == "COMBAT") {
         await performEnemyCombatAction(player, enemy);
-      } else {
+      } else if (playerHealth <= 0 && game_state == "COMBAT") {
         // end combat
         endCombat(enemy);
         setTerminal((prevTerminal) => [
@@ -171,39 +221,49 @@ export default function Home() {
             message: `The ${enemy.name} has killed ${player.name}.`,
           }, // updated line
         ]);
+        CustomState.dispatch({
+          type: "UPDATE_GAME_STATE",
+          payload: GAME_STATES.GAME, // Or whatever the next game state is
+        });
+        endCombat(enemy);
+      } else {
+        endCombat(enemy);
       }
     }, combatInterval);
   }
 
   function startPlayerCombatTimer(player, enemy) {
-    let combatInterval = 5000 - 40 * player.speed;
+    let trueSpeed = 40 * enemy.speed;
+    let combatInterval = 5000 - trueSpeed;
+    let game_state = CustomState.getGameState();
     combatTimers[enemy.id] = setInterval(async () => {
-      await performPlayerCombatAction(player, enemy);
-      // check if enemy is dead here
       if (enemyHealth > 0) {
         await performPlayerCombatAction(player, enemy);
-      } else {
+      } else if (enemyHealth <= 0 && game_state == "COMBAT") {
         // end combat
         endCombat(enemy);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
             type: "system",
-            message: `The ${player.name} has killed ${enemy.name}.`,
+            message: `${player.name} has killed the ${enemy.name}.`,
           }, // updated line
         ]);
+      } else {
+        endCombat(enemy);
       }
     }, combatInterval);
   }
 
   function enterCombat(player, enemy) {
     let combatState = CustomState.getState().combatState;
-    playerHealth = player.health;
-    enemyHealth = enemy.health;
     if (combatState[enemy.id]) {
       combatState[enemy.id].push(player);
+      playerHealth = player.health;
     } else {
       combatState[enemy.id] = [player];
+      playerHealth = player.health;
+      enemyHealth = enemy.health;
     }
 
     CustomState.dispatch({
@@ -222,6 +282,26 @@ export default function Home() {
 
     startEnemyCombatTimer(player, enemy);
     startPlayerCombatTimer(player, enemy);
+  }
+
+  function calcPlayerDamage() {
+    let playerDamage;
+    getUser().then((result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      let weaponRight = local_user.equipment.right_hand;
+      let weaponLeft = local_user.equipment.left_hand;
+      let weaponRightDamage = CustomState.getWeaponState().map((weapon) => {
+        if (weaponRight == weapon.name) {
+          return Number(weapon.atk);
+        }
+      });
+      let totalDamage =
+        Number(local_user.attributes.str) + Number(weaponRightDamage);
+
+      playerDamage = totalDamage;
+    });
+    return playerDamage;
   }
 
   setMap();
@@ -381,9 +461,22 @@ export default function Home() {
         let statsList = `
         Name: ${local_user.character.name}
         Race: ${local_user.character.race}
+        Health: ${local_user.character.health}
         Level: ${local_user.character.level}
         XP: ${local_user.character.xp}
         Location: ${local_user.character.current_location}
+
+        Attributes: 
+        Strength: ${local_user.attributes.str}
+        Speed: ${local_user.attributes.spd}
+        Defense: ${local_user.attributes.def}
+        Intelligence: ${local_user.attributes.int}
+        Endurance: ${local_user.attributes.end}
+        Agility: ${local_user.attributes.agi}
+        Wisdom: ${local_user.attributes.wis}
+        Charisma: ${local_user.attributes.cha}
+        Luck: ${local_user.attributes.lck}
+        Perception: ${local_user.attributes.per}
         `;
         setTerminal((prevTerminal) => [
           ...prevTerminal,
@@ -1999,8 +2092,7 @@ export default function Home() {
             if (runChance > 70) {
               // player successfully runs away
               console.log("You successfully ran away!");
-              // Call endCombat here to end the combat
-              // You'll need to pass the enemy that the player is currently in combat with
+              // Call endCombat on run
             } else {
               // player failed to run away
               console.log("You failed to run away!");
