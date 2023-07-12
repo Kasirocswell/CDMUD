@@ -353,8 +353,10 @@ export default function Home() {
       let local_user = CustomState.getUserState(currUser.id);
 
       return {
-        playerId: player.id,
-        playerName: player.name,
+        corpseId: player.id,
+        corpseType: "player",
+        corpseName: player.name,
+        corpseOwner: player.name,
         current_location: player.current_location,
         items: local_user.character.inventory,
         deathTime: now.getTime(), // getTime() gives you a timestamp in milliseconds
@@ -366,8 +368,10 @@ export default function Home() {
     console.log(enemy);
     let now = new Date();
     return {
-      enemyId: enemy.id,
-      enemyName: enemy.name + `'s Corpse`,
+      corpseId: enemy.id,
+      corpseType: "enemy",
+      corpseName: enemy.name + `'s Corpse`,
+      corpseOwner: enemy.name,
       current_location: enemy.respawn,
       // items: enemy.inventory,
       deathTime: now.getTime(), // getTime() gives you a timestamp in milliseconds
@@ -689,7 +693,7 @@ export default function Home() {
             if (
               corpse.current_location == local_user.character.current_location
             ) {
-              return corpse.enemyName;
+              return corpse.corpseName;
             } else {
               return;
             }
@@ -1334,9 +1338,83 @@ export default function Home() {
         }
       });
     });
-    socket.on("inspect", () => {
-      // examine will call inspect
-      // inspect target
+
+    socket.on("inspect", (_target) => {
+      let target = _target.message.toLowerCase();
+
+      CustomState.getState().Weapons.map((weapon) => {
+        if (weapon.name.toLowerCase() == target) {
+          return setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `${weapon.description}` }, // updated line
+          ]);
+        } else {
+        }
+      });
+
+      CustomState.getState().Armor.map((armor) => {
+        if (armor.name.toLowerCase() == target) {
+          return setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `${armor.description}` }, // updated line
+          ]);
+        } else {
+        }
+      });
+
+      CustomState.getState().Rooms.map((room) => {
+        if (target == "room") {
+          getUser().then((result) => {
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            let current_room = local_user.character.current_location;
+            if (room.room_name.toLowerCase() == current_room.toLowerCase()) {
+              return setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                { type: "system", message: `${room.description}` }, // updated line
+              ]);
+            } else {
+            }
+          });
+        } else {
+        }
+      });
+
+      CustomState.getState().Enemies.map((enemy) => {
+        if (enemy.name.toLowerCase() == target) {
+          return setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            { type: "system", message: `${enemy.description}` }, // updated line
+          ]);
+        } else {
+        }
+      });
+
+      CustomState.getState().corpses.map((corpse) => {
+        if (corpse.corpseName.toLowerCase() == target) {
+          return setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `This is ${corpse.corpseName}'s corpse`,
+            }, // updated line
+          ]);
+        } else {
+        }
+      });
+
+      Object.values(CustomState.getState().users).map((user) => {
+        if (user.character.name.toLowerCase() == target) {
+          return setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `${user.character.name} is level: ${user.character.level}`,
+            }, // updated line
+          ]);
+        } else {
+        }
+      });
     });
     socket.on("loot check", (target) => {
       // ONLY LEWIS CAN DO THIS
