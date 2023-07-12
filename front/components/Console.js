@@ -7,6 +7,8 @@ import CustomState from "../store/CustomState";
 import { GAME_STATES } from "../store/CustomState";
 import { raceMessage } from "./RaceMessage";
 import { ClassMessage } from "./ClassMessage";
+import { getRandomAttackPhrase } from "./utils/AttackPhrases";
+import { getRandomEnemyAttackPhrase } from "./utils/EnemyAttackPhrases";
 import {
   createAttributesMessage,
   AttributeMessage,
@@ -23,6 +25,8 @@ export default function Home() {
   const [rollCount, setRollCount] = useState(1);
   const chatEndRef = useRef(null);
   const didRun = useRef(false);
+  const startSpawn = useRef(false);
+  const corpseCheck = useRef(false);
   const firstLook = useRef(false);
   let gameState = CustomState.getGameState();
 
@@ -101,16 +105,19 @@ export default function Home() {
   };
 
   let combatTimers = {};
-  let enemyHealth;
-  let playerHealth;
+  let enemyHealth = {};
+  let playerHealth = {};
 
   async function endCombat(enemy) {
     let combatState = CustomState.getState().combatState;
-
+    console.log(`end combat enemy ID`);
+    console.log(enemy.id);
     if (combatState[enemy.id]) {
       delete combatState[enemy.id];
-      clearInterval(combatTimers[enemy.id]);
-      delete combatTimers[enemy.id];
+      clearInterval(combatTimers[`${enemy.id}_enemy`]); // This line stops the enemy combat timer
+      clearInterval(combatTimers[`${enemy.id}_player`]); // This line stops the player combat timer
+      delete combatTimers[`${enemy.id}_enemy`];
+      delete combatTimers[`${enemy.id}_player`];
       CustomState.dispatch({
         type: "UPDATE_COMBAT_STATE",
         payload: combatState,
@@ -134,45 +141,61 @@ export default function Home() {
           return Number(weapon.atk);
         }
       });
-      let totalDamage =
-        Number(local_user.attributes.str) + Number(weaponRightDamage);
+      let totalDamage;
 
-      enemyHealth -= totalDamage;
+      if (weaponRight != undefined) {
+        totalDamage =
+          Number(local_user.attributes.str) + Number(weaponRightDamage);
+      } else {
+        totalDamage = Number(local_user.attributes.str);
+      }
+
+      enemyHealth[enemy.id] -= totalDamage;
+
       setTerminal((prevTerminal) => [
         ...prevTerminal,
         {
           type: "system",
-          message: `${player.name} attacked ${enemy.name} for ${totalDamage} damage.`,
-        }, // updated line
+          message: getRandomAttackPhrase(player.name, enemy.name, totalDamage),
+        },
       ]);
     });
   }
 
   async function enemyAttack(enemy, player) {
-    playerHealth -= enemy.atk;
-    setTerminal((prevTerminal) => [
-      ...prevTerminal,
-      {
-        type: "system",
-        message: `${enemy.name} attacked ${player.name} for ${enemy.atk} damage.`,
-      }, // updated line
-    ]);
-
     getUser().then((result) => {
       currUser = result;
       let local_user = CustomState.getUserState(currUser.id);
-      CustomState.dispatch({
-        type: "UPDATE_USER",
-        payload: {
-          userId: currUser.id,
-          data: {
-            character: {
-              ...local_user.character,
-              health: playerHealth,
+      if (local_user.character.health > 0) {
+        playerHealth -= enemy.atk;
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: getRandomEnemyAttackPhrase(
+              enemy.name,
+              player.name,
+              enemy.atk
+            ),
+          },
+        ]);
+        CustomState.dispatch({
+          type: "UPDATE_USER",
+          payload: {
+            userId: currUser.id,
+            data: {
+              character: {
+                ...local_user.character,
+                health: playerHealth,
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        endCombat(enemy);
+        console.log("COMBAT ENDING HERE");
+        console.log("ENEMY ATTACK");
+      }
     });
   }
 
@@ -180,9 +203,15 @@ export default function Home() {
     let game_state = CustomState.getGameState();
     getUser().then(async (result) => {
       currUser = result;
-      let local_user_health = CustomState.getUserState(currUser.id).character
-        .health;
-      if (local_user_health > 0 && game_state == "COMBAT") {
+      let local_user = CustomState.getUserState(currUser.id);
+      if (
+        player.health &&
+        playerHealth &&
+        enemyHealth[enemy.id] > 0 &&
+        local_user.character.health > 0 &&
+        game_state == "COMBAT" &&
+        local_user.character.current_location == enemy.current_location
+      ) {
         let combatState = CustomState.getState().combatState;
         let players = combatState[enemy.id];
 
@@ -191,43 +220,65 @@ export default function Home() {
         await enemyAttack(enemy, target);
       } else {
         endCombat(enemy);
+        console.log("COMBAT ENDING HERE");
+        console.log("PERFORMENEMY COMBAT ACTION");
       }
     });
   }
 
   async function performPlayerCombatAction(player, enemy) {
     let game_state = CustomState.getGameState();
-    if (playerHealth > 0 && game_state == "COMBAT") {
-      let combatState = CustomState.getState().combatState;
-      await playerAttack(player, enemy);
-    }
+    getUser().then(async (result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      if (
+        playerHealth > 0 &&
+        game_state == "COMBAT" &&
+        local_user.character.current_location == enemy.current_location
+      ) {
+        let combatState = CustomState.getState().combatState;
+        console.log("ACTIVE COMBAT TIMERS");
+        console.log(combatTimers);
+        await playerAttack(player, enemy);
+      } else {
+        endCombat(enemy);
+        console.log("COMBAT ENDING HERE");
+        console.log("PERFORM PLAYER COMBAT ACTION");
+      }
+    });
   }
 
   function startEnemyCombatTimer(player, enemy) {
     let trueSpeed = 40 * enemy.speed;
     let combatInterval = 5000 - trueSpeed;
-    let game_state = CustomState.getGameState();
-    combatTimers[enemy.id] = setInterval(async () => {
-      // check if player is dead here
+    console.log("start enemy timer enemy id");
+    console.log(enemy.id);
+    combatTimers[`${enemy.id}_enemy`] = setInterval(async () => {
+      let game_state = CustomState.getGameState();
       if (playerHealth > 0 && game_state == "COMBAT") {
         await performEnemyCombatAction(player, enemy);
-      } else if (playerHealth <= 0 && game_state == "COMBAT") {
-        // end combat
+      } else if (
+        playerHealth <= 0 &&
+        game_state == "COMBAT" &&
+        player.current_location == enemy.current_location
+      ) {
         endCombat(enemy);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
             type: "system",
             message: `The ${enemy.name} has killed ${player.name}.`,
-          }, // updated line
+          },
         ]);
+        createPlayerCorpse(player);
         CustomState.dispatch({
           type: "UPDATE_GAME_STATE",
-          payload: GAME_STATES.GAME, // Or whatever the next game state is
+          payload: GAME_STATES.GAME,
         });
-        endCombat(enemy);
       } else {
         endCombat(enemy);
+        console.log("COMBAT ENDING HERE");
+        console.log("START ENEMY COMBAT TIMER");
       }
     }, combatInterval);
   }
@@ -235,22 +286,25 @@ export default function Home() {
   function startPlayerCombatTimer(player, enemy) {
     let trueSpeed = 40 * enemy.speed;
     let combatInterval = 5000 - trueSpeed;
-    let game_state = CustomState.getGameState();
-    combatTimers[enemy.id] = setInterval(async () => {
-      if (enemyHealth > 0) {
+    combatTimers[`${enemy.id}_player`] = setInterval(async () => {
+      if (enemyHealth[enemy.id] > 0) {
+        console.log("PLAYER TIMER ENEMY HEALTH");
+        console.log(enemyHealth[enemy.id]);
         await performPlayerCombatAction(player, enemy);
-      } else if (enemyHealth <= 0 && game_state == "COMBAT") {
-        // end combat
+      } else if (enemyHealth[enemy.id] <= 0) {
         endCombat(enemy);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
             type: "system",
             message: `${player.name} has killed the ${enemy.name}.`,
-          }, // updated line
+          },
         ]);
+        enemyDies(enemy);
       } else {
         endCombat(enemy);
+        console.log("COMBAT ENDING HERE");
+        console.log("START PLAYER COMBAT TIMER");
       }
     }, combatInterval);
   }
@@ -263,7 +317,7 @@ export default function Home() {
     } else {
       combatState[enemy.id] = [player];
       playerHealth = player.health;
-      enemyHealth = enemy.health;
+      enemyHealth[enemy.id] = enemy.health;
     }
 
     CustomState.dispatch({
@@ -282,28 +336,118 @@ export default function Home() {
 
     startEnemyCombatTimer(player, enemy);
     startPlayerCombatTimer(player, enemy);
+
+    setTerminal((prevTerminal) => [
+      ...prevTerminal,
+      {
+        type: "system",
+        message: `${player.name} prepares for combat with the ${enemy.name}.`,
+      },
+    ]);
   }
 
-  function calcPlayerDamage() {
-    let playerDamage;
+  function createPlayerCorpse(player) {
+    let now = new Date();
     getUser().then((result) => {
       currUser = result;
       let local_user = CustomState.getUserState(currUser.id);
-      let weaponRight = local_user.equipment.right_hand;
-      let weaponLeft = local_user.equipment.left_hand;
-      let weaponRightDamage = CustomState.getWeaponState().map((weapon) => {
-        if (weaponRight == weapon.name) {
-          return Number(weapon.atk);
-        }
-      });
-      let totalDamage =
-        Number(local_user.attributes.str) + Number(weaponRightDamage);
 
-      playerDamage = totalDamage;
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        current_location: player.current_location,
+        items: local_user.character.inventory,
+        deathTime: now.getTime(), // getTime() gives you a timestamp in milliseconds
+      };
     });
-    return playerDamage;
   }
 
+  function createEnemyCorpse(enemy) {
+    console.log(enemy);
+    let now = new Date();
+    return {
+      enemyId: enemy.id,
+      enemyName: enemy.name + `'s Corpse`,
+      current_location: enemy.respawn,
+      // items: enemy.inventory,
+      deathTime: now.getTime(), // getTime() gives you a timestamp in milliseconds
+    };
+  }
+
+  function removeOldCorpses() {
+    let now = new Date().getTime();
+    console.log("ENEMY CORPSES");
+    console.log(CustomState.getState().corpses);
+
+    let newCorpses = CustomState.getState().corpses.filter((corpse) => {
+      return now - corpse.deathTime < 5 * 60 * 1000;
+    });
+
+    CustomState.dispatch({
+      type: "UPDATE_CORPSES",
+      payload: newCorpses,
+    });
+  }
+
+  function updateEnemy(enemyId, newData) {
+    console.log("UPDATE ENEMY ID");
+    console.log(enemyId);
+    CustomState.dispatch({
+      type: "UPDATE_ENEMY",
+      payload: { enemyId, data: newData },
+    });
+  }
+
+  function playerDies(player) {
+    const corpse = createPlayerCorpse(player);
+    CustomState.dispatch({ type: "ADD_CORPSE", payload: corpse });
+  }
+
+  async function enemyDies(enemy) {
+    const corpse = createEnemyCorpse(enemy);
+    CustomState.dispatch({ type: "ADD_CORPSE", payload: corpse });
+    console.log("CORPSE DATA");
+    console.log(corpse);
+    await updateEnemyLocationInDatabase(enemy.id, "DEAD");
+    await setEnemies();
+  }
+
+  async function updateEnemyLocationInDatabase(enemyId, newLocation) {
+    const { data, error } = await supabase
+      .from("Enemies")
+      .update({ current_location: newLocation })
+      .eq("id", enemyId);
+
+    if (error) {
+      console.error("Error updating enemy location:", error);
+    } else {
+      console.log("Enemy location updated successfully:", data);
+    }
+  }
+
+  function respawnAllEnemies() {
+    // Get the current state of all enemies
+    const enemies = CustomState.getState().Enemies;
+
+    // For each enemy, update their location to their respawn point
+    enemies.map(async (enemy) => {
+      if (enemy.current_location == "DEAD") {
+        await updateEnemyLocationInDatabase(enemy.id, enemy.respawn);
+      }
+      await setEnemies();
+    });
+  }
+  let respawnIntervalId;
+  if (startSpawn.current == false) {
+    respawnIntervalId = setInterval(respawnAllEnemies, 300000);
+    startSpawn.current = true;
+  }
+
+  let corpseIntervalId;
+  if (corpseCheck.current == false) {
+    setInterval(removeOldCorpses, 60 * 1000);
+    corpseCheck.current = true;
+  }
   setMap();
   setWeapons();
   setArmor();
@@ -314,6 +458,21 @@ export default function Home() {
   // Listening Events UseEffect
   useEffect(() => {
     socket = io("http://localhost:3000");
+
+    process.on("SIGINT", clearRespawnInterval);
+    process.on("SIGTERM", clearRespawnInterval);
+    process.on("SIGINT", removeOldCorpses);
+    process.on("SIGTERM", removeOldCorpses);
+
+    function clearRespawnInterval() {
+      // Stop respawning enemies
+      clearInterval(respawnIntervalId);
+
+      // Exit the process to allow the server to shut down
+      process.exit();
+    }
+
+    socket.on("disconnect", () => {});
     socket.on("chat message", (msg) => {
       getUser().then((result) => {
         console.log(result);
@@ -525,11 +684,24 @@ export default function Home() {
         });
 
         let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
+        let corpsesInRoom = CustomState.getState()
+          .corpses.map((corpse) => {
+            if (
+              corpse.current_location == local_user.character.current_location
+            ) {
+              return corpse.enemyName;
+            } else {
+              return;
+            }
+          })
+          .join(", ");
+
         let roomName = `
           ${roomDetails.room_name}
           `;
         let roomDescription = `
           ${roomDetails.description}
+
           
         `;
         setTerminal((prevTerminal) => [
@@ -538,7 +710,8 @@ export default function Home() {
             type: "system",
             message: `${roomName} 
                       ${roomDescription}
-    Loot in the room: ${roomLoot}
+    Loot in the room: ${roomLoot} ${corpsesInRoom}
+    
     Enemies in the room: ${enemiesInRoom}
     Players in the room: 
                                       `,
@@ -1063,18 +1236,6 @@ export default function Home() {
 
     // ATTACK FUNCTION HERE
     socket.on("attack check", (target) => {
-      // get current location
-      // current enemy id
-      // attack timer starts the moment player enters room and only if enemies are in the room
-      // player enters room and inspects the enemy to get current power levels of enemy
-      // player can attack or run
-      // player can't run until after attack sequence begins
-      // when player enters room, player and enemy become aware of eachother
-      // enemy will attack first if fast enough
-      // when an enemy enters combat, push enemy into combat state and player into enemies list
-      // auto attack begins (during combat game state, player will be given a dice roll, rolling above preset number will allow user to run, rolling below will not, include cool down for run)
-      // if player rolls for run, attack sequence ends (player is moved to a random room)
-      // if player rolls for no run, attack sequence continues (player can still reroll)
       /////////////////////// *** WHEN PLAYER DIES *** ///////////////////////////
       // message "You Died"
       // all player loot is dropped current room
@@ -2090,13 +2251,26 @@ export default function Home() {
             let runChance = Math.floor(Math.random() * 100) + 1; // generate a number between 1 and 100
 
             if (runChance > 70) {
-              // player successfully runs away
-              console.log("You successfully ran away!");
-              // Call endCombat on run
+              let runDirection = Math.floor(Math.random() * 4) + 1;
+              if (runDirection == 1) {
+                socket.emit("run north");
+              } else if ((runDirection = 2)) {
+                socket.emit("run south");
+              } else if (runDirection == 3) {
+                socket.emit("run east");
+              } else if (runDirection == 4) {
+                socket.emit("run west");
+              }
             } else {
               // player failed to run away
               console.log("You failed to run away!");
-              // Combat continues as normal
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `You failed to run away`,
+                }, // updated line
+              ]);
             }
 
             lastRunAttempt = now; // Record the time of this run attempt
@@ -2104,6 +2278,13 @@ export default function Home() {
             console.log(
               "You are too tired to run away again so soon. Please wait a moment and try again."
             );
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `You're too tired to run right now.'`,
+              }, // updated line
+            ]);
           }
         }
       } else if (game_state == "DEAD") {

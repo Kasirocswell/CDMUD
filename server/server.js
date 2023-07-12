@@ -30,6 +30,26 @@ io.on("connection", (socket) => {
     io.emit("look check");
   });
 
+  socket.on("run north", () => {
+    io.emit("move north");
+    io.emit("enemy check");
+  });
+
+  socket.on("run south", () => {
+    io.emit("move south");
+    io.emit("enemy check");
+  });
+
+  socket.on("run east", () => {
+    io.emit("move east");
+    io.emit("enemy check");
+  });
+
+  socket.on("run west", () => {
+    io.emit("move west");
+    io.emit("enemy check");
+  });
+
   // On Game Command from Console.js
   socket.on("game command", (command) => {
     if (command.startsWith('"') && command.endsWith('"')) {

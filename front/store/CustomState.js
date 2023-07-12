@@ -21,6 +21,7 @@ let state = {
   items: [],
   loot: [],
   combatState: {},
+  corpses: [],
   gameState: GAME_STATES.NAME,
   enemyState: ENEMY_STATES.IDLE,
 };
@@ -43,11 +44,17 @@ const CustomState = {
         state[tableName] = data;
       } else if (action.type === "UPDATE_COMBAT_STATE") {
         state.combatState = action.payload;
+      } else if (action.type === "ADD_CORPSE") {
+        state.corpses.push(action.payload);
+      } else if (action.type === "UPDATE_CORPSES") {
+        // added this block
+        state.corpses = action.payload;
       } else if (action.type === "UPDATE_ENEMY") {
         const { enemyId, data } = action.payload;
-        state.Enemies = state.Enemies.map((enemy) =>
+        const updatedEnemies = state.Enemies.map((enemy) =>
           enemy.id === enemyId ? { ...enemy, ...data } : enemy
         );
+        state = { ...state, Enemies: updatedEnemies };
       } else if (action.type === "UPDATE_GAME_STATE") {
         state.gameState = action.payload;
       } else if (action.type === "SET_CURRENT_ENEMIES") {
