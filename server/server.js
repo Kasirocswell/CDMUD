@@ -92,6 +92,15 @@ io.on("connection", (socket) => {
         io.emit("help check");
       } else if (command.toLowerCase() == "look") {
         io.emit("look check");
+      } else if (
+        command.toLowerCase().startsWith("inspect") ||
+        command.toLowerCase().startsWith("examine")
+      ) {
+        let target = command.slice(8);
+        io.emit("inspect", {
+          type: "system",
+          message: `${target}`,
+        });
       } else if (command.toLowerCase().startsWith("equip")) {
         // Extract the item name from the command
         const itemName = command.slice(6); // remove 'equip ' from the command

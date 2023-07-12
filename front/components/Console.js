@@ -1334,7 +1334,12 @@ export default function Home() {
         }
       });
     });
-    socket.on("loot check", () => {
+    socket.on("inspect", () => {
+      // examine will call inspect
+      // inspect target
+    });
+    socket.on("loot check", (target) => {
+      // ONLY LEWIS CAN DO THIS
       // check if the corresponding enemy is indeed dead
       // check the dead enemy's inventory
       // loot all or some of the dead enemy inventory
@@ -1342,6 +1347,7 @@ export default function Home() {
       // remove looted items from dead enemy inventory
     });
     socket.on("mount check", () => {});
+    // AND THIS; JUST IN CASE YOU GET BORED
     socket.on("move north", async () => {
       getUser().then(async (result) => {
         let currUser = result;
@@ -2287,6 +2293,7 @@ export default function Home() {
             ]);
           }
         }
+        // KASI YOU HAVE TO WORK WITH LEWIS ON THIS
       } else if (game_state == "DEAD") {
       } else if (game_state == "STORE") {
       } else if (game_state == "TRADE") {
