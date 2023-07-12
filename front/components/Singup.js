@@ -64,6 +64,8 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
                 level: `${characterData.char_level}`,
                 xp: `${characterData.char_xp}`,
                 current_location: `${characterData.current_location}`,
+                deathTime: null,
+                respawn: `${characterData.current_location}`,
               },
               equipment: {
                 right_hand: `${equipmentData.right_hand}`,
@@ -96,25 +98,6 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
           },
         });
       };
-
-      // const raceSelector = () => {
-      //   let raceSelection = window.prompt(
-      //     "Enter your character Race(1-4): ",
-      //     ""
-      //   );
-      //   if (raceSelection == 1) {
-      //     return "Human";
-      //   } else if (raceSelection == 2) {
-      //     return "Draconian";
-      //   } else if (raceSelection == 3) {
-      //     return "Ventari";
-      //   } else if (raceSelection == 4) {
-      //     return "Dosha";
-      //   } else {
-      //     raceSelector();
-      //   }
-      // };
-      // Initialize character
 
       getUser().then(async (result) => {
         currUser = result;

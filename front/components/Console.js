@@ -104,6 +104,97 @@ export default function Home() {
     }
   };
 
+  function sendToDeadRoom(player) {
+    getUser().then(async (result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      await CustomState.dispatch({
+        type: "UPDATE_USER",
+        payload: {
+          userId: currUser.id,
+          data: {
+            character: {
+              ...local_user.character,
+              current_location: `DEAD`,
+            },
+          },
+        },
+      });
+
+      socket.emit("game command", "look");
+
+      // Calculating the respawn time
+      const respawnTime = 40 * local_user.character.level;
+
+      // Set timeout until player should be respawned
+      setTimeout(() => respawnPlayer(player), respawnTime);
+    });
+
+    function respawnPlayer(player) {
+      getUser().then(async (result) => {
+        currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        const { data: characterData, dataError } = await supabase
+          .from("Char")
+          .select()
+          .eq("uid", currUser.id)
+          .single();
+
+        await CustomState.dispatch({
+          type: "UPDATE_USER",
+          payload: {
+            userId: currUser.id,
+            data: {
+              character: {
+                ...local_user.character,
+                health: `${characterData.char_health}`,
+                xp: `${characterData.char_xp}`,
+                current_location: `${characterData.char_respawn}`,
+                deathTime: null,
+                respawn: `${characterData.char_respawn}`,
+              },
+              equipment: {
+                right_hand: `Empty`,
+                left_hand: `Empty`,
+                head: `Empty`,
+                neck: `Empty`,
+                chest: `Empty`,
+                back: `Empty`,
+                arms: `Empty`,
+                hands: `Empty`,
+                waist: `Empty`,
+                legs: `Empty`,
+                feet: `Empty`,
+              },
+            },
+          },
+        });
+
+        await CustomState.dispatch({
+          type: "UPDATE_GAME_STATE",
+          payload: GAME_STATES.GAME, // Or whatever the next game state is
+        });
+
+        // Get updated state
+        local_user = CustomState.getUserState(currUser.id);
+        // Notify player of respawn
+        console.log("RESPAWNED LOCAL USER");
+        console.log(local_user);
+        console.log("LOCAL USER RESPAWN LOCATION");
+        console.log(local_user.character.current_location);
+        console.log("ROOM DATA");
+        console.log(CustomState.getState().Rooms);
+        await setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: `${local_user.character.name}, you have been fully healed and returned to ${local_user.character.respawn}.`,
+          },
+        ]);
+      });
+    }
+  }
+
   let combatTimers = {};
   let enemyHealth = {};
   let playerHealth = {};
@@ -167,7 +258,7 @@ export default function Home() {
       currUser = result;
       let local_user = CustomState.getUserState(currUser.id);
       if (local_user.character.health > 0) {
-        playerHealth -= enemy.atk;
+        playerHealth -= 25;
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
@@ -275,6 +366,7 @@ export default function Home() {
           type: "UPDATE_GAME_STATE",
           payload: GAME_STATES.GAME,
         });
+        playerDies(player);
       } else {
         endCombat(enemy);
         console.log("COMBAT ENDING HERE");
@@ -346,16 +438,17 @@ export default function Home() {
     ]);
   }
 
-  function createPlayerCorpse(player) {
+  async function createPlayerCorpse(player) {
     let now = new Date();
-    getUser().then((result) => {
+    return getUser().then((result) => {
       currUser = result;
       let local_user = CustomState.getUserState(currUser.id);
-
+      console.log("PLAYER CORPSE DATA");
+      console.log(player);
       return {
-        corpseId: player.id,
+        corpseId: currUser.id,
         corpseType: "player",
-        corpseName: player.name,
+        corpseName: `${player.name}'s Corpse`,
         corpseOwner: player.name,
         current_location: player.current_location,
         items: local_user.character.inventory,
@@ -402,9 +495,10 @@ export default function Home() {
     });
   }
 
-  function playerDies(player) {
-    const corpse = createPlayerCorpse(player);
+  async function playerDies(player) {
+    const corpse = await createPlayerCorpse(player);
     CustomState.dispatch({ type: "ADD_CORPSE", payload: corpse });
+    sendToDeadRoom(player);
   }
 
   async function enemyDies(enemy) {
@@ -690,6 +784,8 @@ export default function Home() {
         let enemiesInRoom = enemies.map((enemy) => enemy.name).join(", ");
         let corpsesInRoom = CustomState.getState()
           .corpses.map((corpse) => {
+            console.log("CORPSE DATA");
+            console.log(corpse);
             if (
               corpse.current_location == local_user.character.current_location
             ) {
