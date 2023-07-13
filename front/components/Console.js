@@ -1194,157 +1194,75 @@ export default function Home() {
         }
       });
     });
-    socket.on("enemy check", () => {
-      // let enemyHealth = null;
-      // function enemyBark() {
-      //   getUser().then((result) => {
-      //     currUser = result;
-      //     let local_user = CustomState.getUserState(currUser.id);
-      //     let enemies = CustomState.getState().Enemies.filter((enemy) => {
-      //       if (
-      //         enemy.current_location ===
-      //           local_user.character.current_location &&
-      //         enemy.health > 0 &&
-      //         local_user.character.health > 0
-      //       ) {
-      //         setTerminal((prevTerminal) => [
-      //           ...prevTerminal,
-      //           {
-      //             type: "system",
-      //             message: `${enemy.name} stares are you while grinding his teeth.`,
-      //           }, // updated line
-      //         ]);
-      //       }
-      //     });
-      //   });
-      // }
-      // function autoAttack() {
-      //   getUser().then((result) => {
-      //     currUser = result;
-      //     let local_user = CustomState.getUserState(currUser.id);
-      //     let enemies = CustomState.getState().Enemies.filter((enemy) => {
-      //       if (
-      //         enemy.current_location ===
-      //           local_user.character.current_location &&
-      //         enemy.health > 0 &&
-      //         local_user.character.health > 0 &&
-      //         enemyHealth == null
-      //       ) {
-      //         enemyHealth = Number(enemy.health);
-      //       }
-      //     });
-      //   });
-      //   // Enemy attack
-      //   setTimeout(function () {
-      //     const enemyAttackInterval = setInterval(() => {
-      //       getUser().then((result) => {
-      //         currUser = result;
-      //         let local_user = CustomState.getUserState(currUser.id);
-      //         let enemies = CustomState.getState().Enemies.filter((enemy) => {
-      //           let playerHealth = Number(local_user.character.health);
-      //           if (
-      //             enemy.current_location ===
-      //               local_user.character.current_location &&
-      //             enemyHealth > 0 &&
-      //             local_user.character.health > 0
-      //           ) {
-      //             let enemyDamage = 2;
-      //             playerHealth = playerHealth - enemyDamage * 2;
-      //             let attackMessage = `${enemy.name} attacked you for ${
-      //               enemyDamage * 2
-      //             } damage`;
-      //             setTerminal((prevTerminal) => [
-      //               ...prevTerminal,
-      //               { type: "system", message: `${attackMessage}` }, // updated line
-      //             ]);
-      //             CustomState.dispatch({
-      //               type: "UPDATE_USER",
-      //               payload: {
-      //                 userId: currUser.id,
-      //                 data: {
-      //                   character: {
-      //                     ...CustomState.getState().users[currUser.id]
-      //                       .character, // Spread the current character data
-      //                     health: `${playerHealth}`, // Update only health
-      //                   },
-      //                 },
-      //               },
-      //             });
-      //           } else if (enemyHealth == null) {
-      //           } else {
-      //             clearInterval(playerAttackInterval);
-      //             clearInterval(enemyAttackInterval);
-      //             setTerminal((prevTerminal) => [
-      //               ...prevTerminal,
-      //               {
-      //                 type: "system",
-      //                 message: `${local_user.character.name} was killed by ${enemy.name}`,
-      //               }, // updated line
-      //             ]);
-      //           }
-      //         });
-      //       });
-      //     }, 2000); // Adjust interval length as necessary
-      //     // Player attack
-      //     const playerAttackInterval = setInterval(() => {
-      //       getUser().then((result) => {
-      //         currUser = result;
-      //         let local_user = CustomState.getUserState(currUser.id);
-      //         let enemies = CustomState.getState().Enemies.filter((enemy) => {
-      //           let playerHealth = Number(local_user.character.health);
-      //           if (
-      //             enemy.current_location ===
-      //               local_user.character.current_location &&
-      //             enemyHealth > 0 &&
-      //             playerHealth > 0
-      //           ) {
-      //             let enemyDamage = 10;
-      //             enemyHealth = enemyHealth - 10;
-      //             let attackMessage = `You attacked ${enemy.name} for ${enemyDamage} damage`;
-      //             setTerminal((prevTerminal) => [
-      //               ...prevTerminal,
-      //               { type: "system", message: `${attackMessage}` }, // updated line
-      //             ]);
-      //           } else if (enemyHealth == null) {
-      //           } else {
-      //             clearInterval(playerAttackInterval);
-      //             clearInterval(enemyAttackInterval);
-      //             setTerminal((prevTerminal) => [
-      //               ...prevTerminal,
-      //               {
-      //                 type: "system",
-      //                 message: `${local_user.character.name} killed the ${enemy.name}`,
-      //               }, // updated line
-      //             ]);
-      //           }
-      //         });
-      //       });
-      //     }, 1000);
-      //     // Cleanup function
-      //     return () => {
-      //       clearInterval(playerAttackInterval);
-      //       clearInterval(enemyAttackInterval);
-      //     };
-      //   }, 6000);
-      // }
-      // autoAttack();
-      // if (!didRun.current) {
-      //   setTimeout(enemyBark, 3000);
-      //   didRun.current = true;
-      // }
+    socket.on("enemy check", async () => {
+      let barkDone = false;
+
+      async function enemyBarkAndAttack() {
+        let currUser = await getUser();
+        let local_user = CustomState.getUserState(currUser.id);
+
+        let enemies = CustomState.getState().Enemies.filter(
+          (enemy) =>
+            enemy.current_location === local_user.character.current_location &&
+            enemy.health > 0
+        );
+
+        if (enemies.length === 0) {
+          return;
+        }
+
+        let enemy = enemies[0];
+        let players = CustomState.getUserState(currUser.id);
+
+        // The enemy barks first
+        let bark = async () => {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `${enemy.name} stares at you while grinding his teeth.`,
+            },
+          ]);
+        };
+
+        await setTimeout(bark, 3000);
+        barkDone = true;
+        // Determine if enemy strikes first based on a speed check
+        let firstStrike = Math.random() < enemy.speed / 100;
+        let target = CustomState.getUserState(currUser.id).character;
+        let enemyFirstStrike = async () => {
+          if (firstStrike) {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `${enemy.name} launches a first strike attack!`,
+              },
+            ]);
+            enterCombat(local_user.character, enemy);
+          } else {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `${enemy.name} first strike attempt failed.`,
+              },
+            ]);
+            enterCombat(local_user.character, enemy);
+          }
+        };
+
+        await setTimeout(enemyFirstStrike, 5000);
+      }
+
+      // Call the function to start the enemy action
+      if (!barkDone) {
+        await enemyBarkAndAttack();
+      }
     });
 
     // ATTACK FUNCTION HERE
     socket.on("attack check", (target) => {
-      /////////////////////// *** WHEN PLAYER DIES *** ///////////////////////////
-      // message "You Died"
-      // all player loot is dropped current room
-      // player is sent to respawn point with nothing
-      /////////////////////// *** WHEN ENEMY DIES *** ///////////////////////////
-      // message "Enemy Killed"
-      // enemy loot dropped
-      // player can pick it up or leave it
-      // enemy is on cool down for preset time
       getUser().then((result) => {
         currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
@@ -1776,6 +1694,44 @@ export default function Home() {
       let game_state = CustomState.getGameState();
       if (gameState === GAME_STATES.NAME) {
         async function checkName() {
+          // Adding checks for invalid names
+          const badWords = [
+            "bitch",
+            "fuck",
+            "shit",
+            "pussy",
+            "cunt",
+            "damn",
+            "ass",
+            "nigger",
+            "spick",
+            "kike",
+            "wetback",
+            "mother",
+            "motha",
+            "muda",
+            "mudda",
+            "muther",
+            "slant",
+          ]; // Add any words you want to block
+          const hasBadWord = badWords.some((badWord) =>
+            message.toLowerCase().includes(badWord)
+          );
+          const hasInvalidChars = /[^a-zA-Z]/.test(message);
+          const isTooLong = message.length > 12;
+
+          if (hasBadWord || hasInvalidChars || isTooLong) {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `Invalid name. Names must be less than 13 characters, contain no spaces or special characters, and not contain inappropriate words. Please try again.`,
+              },
+            ]);
+            socket.emit("character check");
+            return;
+          }
+
           const { data: nameCheck, error } = await supabase
             .from("Char")
             .select("char_name");
@@ -1783,13 +1739,14 @@ export default function Home() {
           const isNameTaken = nameCheck.some(
             (char) => char.char_name == message
           );
+
           if (isNameTaken) {
             setTerminal((prevTerminal) => [
               ...prevTerminal,
               {
                 type: "system",
                 message: `This name is already in use, please try again`,
-              }, // updated line
+              },
             ]);
             socket.emit("character check");
           } else {
@@ -1800,12 +1757,14 @@ export default function Home() {
                 .from("Char")
                 .update({ char_name: message })
                 .match({ uid: currUser.id });
+
               if (error) {
                 console.log(error);
                 console.log(
                   "There has been an error saving the name to supabase"
                 );
               }
+
               CustomState.dispatch({
                 type: "UPDATE_USER",
                 payload: {
@@ -1818,13 +1777,15 @@ export default function Home() {
                   },
                 },
               });
+
               setTerminal((prevTerminal) => [
                 ...prevTerminal,
                 {
                   type: "system",
                   message: `Your name is now set to ${message}`,
-                }, // updated line
+                },
               ]);
+
               CustomState.dispatch({
                 type: "UPDATE_GAME_STATE",
                 payload: GAME_STATES.RACE, // Or whatever the next game state is
