@@ -166,7 +166,11 @@ io.on("connection", (socket) => {
           message: `${itemName}`,
         });
       } else if (command.toLowerCase().startsWith("loot")) {
-        io.emit("loot check");
+        let target = command.slice(5);
+        io.emit("loot check", {
+          type: "system",
+          message: `${target}`,
+        });
       } else if (command.toLowerCase().startsWith("mount")) {
         // io.emit("mount check");
       } else if (

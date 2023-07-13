@@ -258,7 +258,7 @@ export default function Home() {
       currUser = result;
       let local_user = CustomState.getUserState(currUser.id);
       if (local_user.character.health > 0) {
-        playerHealth -= 25;
+        playerHealth -= enemy.atk;
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
@@ -466,7 +466,7 @@ export default function Home() {
       corpseName: enemy.name + `'s Corpse`,
       corpseOwner: enemy.name,
       current_location: enemy.respawn,
-      // items: enemy.inventory,
+      items: enemy.inventory,
       deathTime: now.getTime(), // getTime() gives you a timestamp in milliseconds
     };
   }
@@ -723,7 +723,7 @@ export default function Home() {
         XP: ${local_user.character.xp}
         Location: ${local_user.character.current_location}
 
-        Attributes: 
+        *Attributes* 
         Strength: ${local_user.attributes.str}
         Speed: ${local_user.attributes.spd}
         Defense: ${local_user.attributes.def}
@@ -1512,13 +1512,40 @@ export default function Home() {
         }
       });
     });
-    socket.on("loot check", (target) => {
+    socket.on("loot check", (_target) => {
       // ONLY LEWIS CAN DO THIS
-      // check if the corresponding enemy is indeed dead
-      // check the dead enemy's inventory
-      // loot all or some of the dead enemy inventory
-      // add looted items to player inventory
-      // remove looted items from dead enemy inventory
+      // current room of player && enemy, have to be in same room
+      // loot just take all enemies inventory and then remove looted items from dead enemy inventory
+      let canLoot = false;
+      let target = _target.message
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+      getUser().then(async (result) => {
+        let currUser = result;
+        let local_user = CustomState.getUserState(currUser.id);
+        CustomState.getState().corpses.map((corpse) => {
+          if (
+            corpse.current_location == local_user.character.current_location
+          ) {
+            canLoot = true;
+          }
+        });
+        if (canLoot) {
+          let newCorpse = CustomState.getState().corpses.map((corpse) => {
+            console.log("CORPSE DATA");
+            console.log(target);
+            console.log(corpse);
+            if (corpse.corpseName == target) {
+              return corpse;
+            }
+          });
+          let corpseTarget = newCorpse[0];
+          console.log("NEW CORPSE DATA");
+          console.log(corpseTarget.items);
+        }
+      });
     });
     socket.on("mount check", () => {});
     // AND THIS; JUST IN CASE YOU GET BORED
