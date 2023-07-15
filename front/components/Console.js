@@ -178,11 +178,6 @@ export default function Home() {
         // Get updated state
         local_user = CustomState.getUserState(currUser.id);
         // Notify player of respawn
-        console.log("RESPAWNED LOCAL USER");
-        console.log(local_user);
-        console.log("LOCAL USER RESPAWN LOCATION");
-        console.log(local_user.character.current_location);
-        console.log("ROOM DATA");
         console.log(CustomState.getState().Rooms);
         await setTerminal((prevTerminal) => [
           ...prevTerminal,
@@ -678,6 +673,48 @@ export default function Home() {
     });
 
     // System Command Event Listener functions
+
+    socket.on("use teleporter", async () => {
+      currUser = getUser();
+      let local_user = CustomState.getUserState(currUser.id);
+      let canTeleport = false;
+      let inventory = [...CustomState.getUserState(currUser.id).inventory];
+
+      if (
+        inventory.includes(`Guard ID Badge`) &&
+        local_user.character.current_location == "Docking Bay"
+      ) {
+        canTeleport = true;
+      }
+
+      if (canTeleport) {
+        setTerminal((prevTerminal) => [
+          ...prevTerminal,
+          {
+            type: "system",
+            message: `With the bustling activity of the launch bay around you fading into a background hum, you step onto the teleporter platform. A field of charged particles, visible only as a faint shimmer, forms a barrier around you. The hum of the teleporter intensifies, and the starscape beyond the force-field aperture becomes a blur. A surge of energy pulses beneath your feet, and your surroundings dissolve into a prismatic whirl of colors.
+
+            A sensation of weightlessness seizes you as you journey through this liminal space. The rush of adrenaline mixes with a sense of anticipation and freedom as you leave behind the confines of the orbiting jail.
+            
+            In what feels like no time at all, the dizzying blur of colors coalesces back into solidity. Your feet touch down on firm ground, and the distinctive sights, sounds, and smells of an entirely new world greet you. The teleporter has successfully transported you, opening the door to your new life beyond the orbital prison.`,
+          }, // updated line
+        ]);
+
+        await CustomState.dispatch({
+          type: "UPDATE_USER",
+          payload: {
+            userId: currUser.id,
+            data: {
+              character: {
+                ...local_user.character,
+                current_location: `Xyreon Starport Terminal`,
+              },
+            },
+          },
+        });
+      }
+      await socket.emit("game command", "look");
+    });
     socket.on("inventory check", () => {
       getUser().then(async (result) => {
         let currUser = result;
@@ -1080,6 +1117,7 @@ export default function Home() {
         }
       });
     });
+
     socket.on("drop item", (itemName) => {
       let inInventory = false;
       let itemNameMessage = itemName.message;

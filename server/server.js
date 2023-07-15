@@ -209,6 +209,8 @@ io.on("connection", (socket) => {
       ) {
         io.emit("exit check");
         io.emit("enemy check");
+      } else if (command.toLowerCase() == "use teleporter") {
+        io.emit("use teleporter");
       } else {
         io.emit("terminal update", {
           type: "system",
