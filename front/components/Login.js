@@ -50,6 +50,7 @@ const Login = ({ LoggedIn, tabsToggle }) => {
             name: `${characterData.char_name}`,
             race: `${characterData.char_race}`,
             class: `${characterData.char_class}`,
+            credits: `${characterData.char_credits}`,
             health: `${characterData.char_health}`,
             level: `${characterData.char_level}`,
             xp: `${characterData.char_xp}`,

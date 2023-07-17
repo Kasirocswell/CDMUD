@@ -173,6 +173,12 @@ io.on("connection", (socket) => {
         });
       } else if (command.toLowerCase().startsWith("mount")) {
         // io.emit("mount check");
+      } else if (command.toLowerCase().startsWith("talk to")) {
+        let npcName = command.toLowerCase().slice(8);
+        io.emit("talk check", {
+          type: "system",
+          message: npcName,
+        });
       } else if (
         command.toLowerCase() == "north" ||
         command.toLowerCase() == "n"

@@ -1,3 +1,5 @@
+import { NPCs } from "../components/NPCs";
+
 export const GAME_STATES = {
   NAME: "NAME",
   NAME_CONFIRMATION: "NAME_CONFIRMATION",
@@ -23,6 +25,7 @@ let state = {
   loot: [],
   combatState: {},
   corpses: [],
+  npcs: [...NPCs],
   gameState: GAME_STATES.NAME,
   enemyState: ENEMY_STATES.IDLE,
 };
@@ -48,7 +51,6 @@ const CustomState = {
       } else if (action.type === "ADD_CORPSE") {
         state.corpses.push(action.payload);
       } else if (action.type === "UPDATE_CORPSES") {
-        // added this block
         state.corpses = action.payload;
       } else if (action.type === "UPDATE_ENEMY") {
         const { enemyId, data } = action.payload;
@@ -61,6 +63,12 @@ const CustomState = {
       } else if (action.type === "SET_CURRENT_ENEMIES") {
         const { data } = action.payload;
         state.currentEnemies = data;
+      } else if (action.type === "UPDATE_NPC") {
+        const { npcId, data } = action.payload;
+        const updatedNPCs = state.npcs.map((npc) =>
+          npc.id === npcId ? { ...npc, ...data } : npc
+        );
+        state = { ...state, npcs: updatedNPCs };
       } else {
         state = { ...state, ...action };
       }

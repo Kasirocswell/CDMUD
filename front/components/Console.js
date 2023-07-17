@@ -16,6 +16,7 @@ import {
   attributes,
   reroll,
 } from "./AttributeMessage";
+import { NPCs } from "./NPCs";
 
 let socket;
 
@@ -23,6 +24,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [terminal, setTerminal] = useState([]);
   const [rollCount, setRollCount] = useState(1);
+  const [TargetNPC, setTargetNPC] = useState(" ");
   const chatEndRef = useRef(null);
   const didRun = useRef(false);
   const startSpawn = useRef(false);
@@ -536,11 +538,62 @@ export default function Home() {
     startSpawn.current = true;
   }
 
-  let corpseIntervalId;
   if (corpseCheck.current == false) {
     setInterval(removeOldCorpses, 60 * 1000);
     corpseCheck.current = true;
   }
+
+  async function talkToNPC(npcName, topic = "greeting") {
+    let currentNPC;
+    let currentNPCName;
+    console.log("NPC NAME");
+    console.log(npcName);
+    if (npcName?.message) {
+      currentNPCName = npcName.message
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+    } else {
+      console.log("NPC DATA");
+      console.log(npcName);
+      currentNPCName = npcName.name
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(" ");
+    }
+
+    CustomState.getState().npcs.map((npc) => {
+      if (npc.name == currentNPCName) {
+        currentNPC = npc;
+        setTargetNPC(npc);
+      }
+    });
+    const dialogue = currentNPC.dialogue[topic];
+    console.log(dialogue.text);
+    const responses = Object.keys(dialogue.responses);
+    console.log("You can respond with: " + responses.join(", "));
+    await CustomState.dispatch({
+      type: "UPDATE_GAME_STATE",
+      payload: GAME_STATES.STORE, // Or whatever the next game state is
+    });
+    setTerminal((prevTerminal) => [
+      ...prevTerminal,
+      {
+        type: "system",
+        message: dialogue.text,
+      }, // updated line
+    ]);
+    setTerminal((prevTerminal) => [
+      ...prevTerminal,
+      {
+        type: "system",
+        message: "You can respond with: " + responses.join(", "),
+      }, // updated line
+    ]);
+  }
+
   setMap();
   setWeapons();
   setArmor();
@@ -673,6 +726,9 @@ export default function Home() {
     });
 
     // System Command Event Listener functions
+    socket.on("talk check", async (npc) => {
+      talkToNPC(npc);
+    });
 
     socket.on("activate teleporter", async () => {
       getUser().then(async (result) => {
@@ -756,6 +812,7 @@ export default function Home() {
         let statsList = `
         Name: ${local_user.character.name}
         Race: ${local_user.character.race}
+        Credits: ${local_user.character.credits}
         Health: ${local_user.character.health}
         Level: ${local_user.character.level}
         XP: ${local_user.character.xp}
@@ -842,6 +899,13 @@ export default function Home() {
 
           
         `;
+        let npcsInRoom = CustomState.getState().npcs.map((npc) => {
+          if (npc.location == local_user.character.current_location) {
+            return npc.name;
+          }
+        });
+        console.log("NPC DATA");
+        console.log(NPCs);
         setTerminal((prevTerminal) => [
           ...prevTerminal,
           {
@@ -849,7 +913,7 @@ export default function Home() {
             message: `${roomName} 
                       ${roomDescription}
     Loot in the room: ${roomLoot} ${corpsesInRoom}
-    
+    NPCs in the room: ${npcsInRoom}
     Enemies in the room: ${enemiesInRoom}
     Players in the room: 
                                       `,
@@ -1470,9 +1534,6 @@ export default function Home() {
       });
     });
     socket.on("loot check", (_target) => {
-      // ONLY LEWIS CAN DO THIS
-      // current room of player && enemy, have to be in same room
-      // loot just take all enemies inventory and then remove looted items from dead enemy inventory
       let canLoot = false;
       let target = _target.message
         .toLowerCase()
@@ -1503,8 +1564,6 @@ export default function Home() {
           let corpseTarget = newCorpse[0];
           let currInv = [...local_user.inventory];
           let newInv = [...corpseTarget.items];
-          console.log("NEW CORPSE DATA");
-          console.log(corpseTarget.items);
           CustomState.dispatch({
             type: "UPDATE_USER",
             payload: {
@@ -2511,14 +2570,61 @@ export default function Home() {
               ...prevTerminal,
               {
                 type: "system",
-                message: `You're too tired to run right now.'`,
+                message: `You're too tired to run right now.`,
               }, // updated line
             ]);
           }
         }
-        // KASI YOU HAVE TO WORK WITH LEWIS ON THIS
       } else if (game_state == "DEAD") {
       } else if (game_state == "STORE") {
+        if (message.toLocaleLowerCase() == "shop") {
+          getUser().then((result) => {
+            let TargetNPC;
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            CustomState.getState().npcs.map((npc) => {
+              if (npc.location === local_user.character.location) {
+                TargetNPC = npc;
+              }
+            });
+          });
+          talkToNPC(TargetNPC, "shop");
+        } else if (message.toLocaleLowerCase() == "chat") {
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.GAME,
+          });
+        } else if (message.toLocaleLowerCase() == "quest") {
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.GAME,
+          });
+        } else if (message.toLocaleLowerCase() == "joke") {
+          getUser().then((result) => {
+            let TargetNPC;
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            CustomState.getState().npcs.map((npc) => {
+              if (npc.location === local_user.character.location) {
+                TargetNPC = npc;
+              }
+            });
+          });
+          talkToNPC(TargetNPC, "joke");
+        } else if (message.toLocaleLowerCase() == "leave") {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You stop talking and walk away.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.GAME, // Or whatever the next game state is
+          });
+          socket.emit("game command", "look");
+        }
       } else if (game_state == "TRADE") {
       } else {
         socket.emit("game command", message);

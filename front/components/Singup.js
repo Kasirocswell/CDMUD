@@ -60,6 +60,7 @@ const Signup = ({ LoggedIn, tabsToggle }) => {
                 name: null,
                 race: null,
                 class: null,
+                credits: `${characterData.char_credits}`,
                 health: `${characterData.char_health}`,
                 level: `${characterData.char_level}`,
                 xp: `${characterData.char_xp}`,
