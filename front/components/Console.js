@@ -2590,15 +2590,29 @@ export default function Home() {
           });
           talkToNPC(TargetNPC, "shop");
         } else if (message.toLocaleLowerCase() == "chat") {
-          CustomState.dispatch({
-            type: "UPDATE_GAME_STATE",
-            payload: GAME_STATES.GAME,
+          getUser().then((result) => {
+            let TargetNPC;
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            CustomState.getState().npcs.map((npc) => {
+              if (npc.location === local_user.character.location) {
+                TargetNPC = npc;
+              }
+            });
           });
+          talkToNPC(TargetNPC, "chat");
         } else if (message.toLocaleLowerCase() == "quest") {
-          CustomState.dispatch({
-            type: "UPDATE_GAME_STATE",
-            payload: GAME_STATES.GAME,
+          getUser().then((result) => {
+            let TargetNPC;
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            CustomState.getState().npcs.map((npc) => {
+              if (npc.location === local_user.character.location) {
+                TargetNPC = npc;
+              }
+            });
           });
+          talkToNPC(TargetNPC, "quest");
         } else if (message.toLocaleLowerCase() == "joke") {
           getUser().then((result) => {
             let TargetNPC;
