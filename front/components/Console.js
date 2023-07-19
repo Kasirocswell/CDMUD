@@ -2660,6 +2660,60 @@ export default function Home() {
     }
   }, [game_state]);
 
+  // Save Game Function
+
+  const saveCharacter = () => {
+    getUser().then(async (result) => {
+      currUser = result;
+      local_user = CustomState.getUserState(currUser.id);
+      const { data: characterUpdate, charError } = await supabase
+        .from("Char")
+        .update({
+          current_location: local_user.character.current_location,
+          char_health: local_user.character.health,
+          char_level: local_user.character.level,
+          char_xp: local_user.character.xp,
+          char_credits: local_user.character.credits,
+        })
+        .match({ uid: currUser.id });
+
+      const { data: equipmentUpdate, equipmentError } = await supabase
+        .from("Equipment")
+        .update({
+          right_hand: local_user.equipment.right_hand,
+          left_hand: local_user.equipment.left_hand,
+          head: local_user.equipment.head,
+          neck: local_user.equipment.neck,
+          chest: local_user.equipment.chest,
+          back: local_user.equipment.back,
+          arms: local_user.equipment.arms,
+          hands: local_user.equipment.hands,
+          waist: local_user.equipment.wasit,
+          legs: local_user.equipment.legs,
+          feet: local_user.equipment.feet,
+        })
+        .match({ uid: currUser.id });
+
+      const { data: attributesUpdate, attributesError } = await supabase
+        .from("Attributes")
+        .update({
+          str: local_user.atrtibutes.str,
+          spd: local_user.atrtibutes.spd,
+          def: local_user.atrtibutes.def,
+          int: local_user.atrtibutes.int,
+          end: local_user.atrtibutes.end,
+          agi: local_user.atrtibutes.agi,
+          cha: local_user.atrtibutes.cha,
+          lck: local_user.atrtibutes.lck,
+          wis: local_user.atrtibutes.wis,
+          per: local_user.atrtibutes.per,
+        })
+        .match({ uid: currUser.id });
+    });
+  };
+
+  // setInterval(saveCharacter, 60000);
+
   const colorSelector = (type) => {
     switch (type) {
       case "global":
