@@ -661,6 +661,12 @@ export default function Home() {
         { type: "system", message: title }, // updated line
       ]);
     });
+    socket.on("training message", () => {
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        { type: "system", message: "Welcome to the training center!" }, // updated line
+      ]);
+    });
     // Character Check - Title
     let nameProcess = false;
     let raceProcess = false;
@@ -2601,6 +2607,22 @@ export default function Home() {
             });
           });
           talkToNPC(TargetNPC, "chat");
+        } else if (message.toLocaleLowerCase() == "train") {
+          getUser().then((result) => {
+            let TargetNPC;
+            currUser = result;
+            let local_user = CustomState.getUserState(currUser.id);
+            CustomState.getState().npcs.map((npc) => {
+              if (npc.location === local_user.character.location) {
+                TargetNPC = npc;
+              }
+            });
+          });
+          socket.emit("game command", "training message");
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.LEVELUP, // Or whatever the next game state is
+          });
         } else if (message.toLocaleLowerCase() == "quest") {
           getUser().then((result) => {
             let TargetNPC;
@@ -2640,6 +2662,20 @@ export default function Home() {
           socket.emit("game command", "look");
         }
       } else if (game_state == "TRADE") {
+      } else if (game_state == "LEVELUP") {
+        if (message.toLowerCase() == "train") {
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `You leveled up.`,
+            }, // updated line
+          ]);
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.GAME, // Or whatever the next game state is
+          });
+        }
       } else {
         socket.emit("game command", message);
       }

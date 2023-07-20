@@ -227,7 +227,7 @@ export const NPCs = [
       greeting: {
         text: "Welcome to the Xyreon Skill Center",
         responses: {
-          shop: "What do you have for sale?",
+          train: "What do you have for sale?",
           quest: "I'm looking for a quest.",
           chat: "Just passing by.",
           leave: "Bye",
@@ -332,6 +332,341 @@ export const NPCs = [
   {
     name: "Chaplain Elysius",
     location: "Xyreon Weapons & Armor INT",
+    details:
+      "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
+    dialogue: {
+      greeting: {
+        text: "What has brought you here traveler?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // town square
+  {
+    name: "Mozen",
+    location: "Xyreon Town Square",
+    details: "Local enjoying the fresh air.",
+    dialogue: {
+      greeting: {
+        text: "I woke up to day and thats what counts.",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // garden
+  {
+    name: "Arborist",
+    location: "Xyreon Garden",
+    details:
+      "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
+    dialogue: {
+      greeting: {
+        text: "What has brought you here traveler?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // hospital
+  {
+    name: "Sickly Patient",
+    location: "Xyreon Hospital",
+    details:
+      "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
+    dialogue: {
+      greeting: {
+        text: "What has brought you here traveler?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // residential
+  {
+    name: "Resident Teenager",
+    location: "Xyreon Residential District",
+    details:
+      "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
+    dialogue: {
+      greeting: {
+        text: "What has brought you here traveler?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // park
+  {
+    name: "Middle Aged Female",
+    location: "Xyreon Park",
+    details:
+      "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
+    dialogue: {
+      greeting: {
+        text: "What has brought you here traveler?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      shop: {
+        text: "Everyone wants the same thing, death. What tool will you be choosing?",
+        responses: {
+          shop: "What do you have for sale?",
+          quest: "I'm looking for a quest.",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      quest: {
+        text: "You are neither smart or strong. Come back when the MVP is done!",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      chat: {
+        text: "When will these new soldiers learn, fire power isn't everything. Well placed shots will dismantle any structure. Slay any foe.",
+        responses: {
+          shop: "Well how many cats do you sell?",
+          quest: "I'm looking for a ques where I can find a cat then?",
+          chat: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+      joke: {
+        text: "You hurt? Put some dirt on it.",
+        responses: {
+          nice: "What do you have for sale?",
+          indifferent: "I'm looking for a quest.",
+          angry: "Just passing by.",
+          leave: "Bye",
+        },
+      },
+    },
+    quests: {},
+    itemsForSale: {},
+  },
+  // school
+  {
+    name: "Professor Kuzu",
+    location: "Xyreon Skill Center",
     details:
       "A battle harded warrior, well in a past life, has disassembled a bolter a midst a jungle of weapons parts.",
     dialogue: {
