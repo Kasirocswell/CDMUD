@@ -12,6 +12,7 @@ export const GAME_STATES = {
   TRADE: "TRADE",
   DEAD: "DEAD",
   LEVELUP: "LEVELUP",
+  SHOPPING: "SHOPPING",
 };
 
 export const ENEMY_STATES = {

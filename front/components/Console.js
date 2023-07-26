@@ -20,6 +20,13 @@ import { NPCs } from "./NPCs";
 
 let socket;
 
+export const getUser = async () => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+};
+
 export default function Home() {
   const [message, setMessage] = useState("");
   const [terminal, setTerminal] = useState([]);
@@ -31,13 +38,6 @@ export default function Home() {
   const corpseCheck = useRef(false);
   const firstLook = useRef(false);
   let gameState = CustomState.getGameState();
-
-  const getUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
-  };
 
   let currUser;
 
@@ -102,6 +102,17 @@ export default function Home() {
       CustomState.dispatch({
         type: "SET_TABLE_DATA",
         payload: { tableName: "Enemies", data },
+      });
+    }
+  };
+  const setStores = async () => {
+    const { data, error } = await supabase.from("Stores").select("*");
+    if (error) {
+      console.error("Error fetching data:", error);
+    } else {
+      CustomState.dispatch({
+        type: "SET_TABLE_DATA",
+        payload: { tableName: "Stores", data },
       });
     }
   };
@@ -2685,6 +2696,11 @@ export default function Home() {
           });
           socket.emit("game command", "look");
         }
+      } else if (game_state == "SHOPPING") {
+        getUser().then((result) => {
+          currUser = result;
+          let local_user = CustomState.getUserState(currUser.id);
+        });
       } else if (game_state == "TRADE") {
       } else if (game_state == "LEVELUP") {
         if (message.toLowerCase() == "train") {

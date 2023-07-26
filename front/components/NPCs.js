@@ -1,3 +1,6 @@
+import CustomState from "../store/CustomState";
+import { getUser } from "./Console";
+
 export const NPCs = [
   {
     name: "Old Man",
@@ -289,7 +292,8 @@ export const NPCs = [
         },
       },
       shop: {
-        text: "If you have enough credits, you can have whatever.",
+        text: `If you have enough credits, you can have whatever. 
+        Here's whats currently in stock: Enter 1 for Bionic Arms for 30 creds.`,
         responses: {
           shop: "What do you have for sale?",
           quest: "I'm looking for a quest.",
