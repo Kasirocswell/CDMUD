@@ -237,7 +237,7 @@ export default function Home() {
       } else {
         totalDamage = Number(local_user.attributes.str);
       }
-
+      totalDamage = 16;
       enemyHealth[enemy.id] -= totalDamage;
 
       setTerminal((prevTerminal) => [
@@ -499,6 +499,29 @@ export default function Home() {
   }
 
   async function enemyDies(enemy) {
+    getUser().then((result) => {
+      currUser = result;
+      let local_user = CustomState.getUserState(currUser.id);
+      CustomState.dispatch({
+        type: "UPDATE_USER",
+        payload: {
+          userId: currUser.id,
+          data: {
+            character: {
+              ...local_user.character,
+              xp: Number(local_user.character.xp) + Number(enemy.xp_drop),
+            },
+          },
+        },
+      });
+      setTerminal((prevTerminal) => [
+        ...prevTerminal,
+        {
+          type: "system",
+          message: `The ${enemy.name} dropped ${enemy.xp_drop} XP`,
+        },
+      ]);
+    });
     const corpse = createEnemyCorpse(enemy);
     CustomState.dispatch({ type: "ADD_CORPSE", payload: corpse });
     console.log("CORPSE DATA");
@@ -905,11 +928,12 @@ export default function Home() {
 
           
         `;
-        let npcsInRoom = CustomState.getState().npcs.map((npc) => {
-          if (npc.location == local_user.character.current_location) {
-            return npc.name;
-          }
-        });
+        let npcsInRoom = CustomState.getState()
+          .npcs.filter(
+            (npc) => npc.location == local_user.character.current_location
+          )
+          .map((npc) => npc.name);
+
         console.log("NPC DATA");
         console.log(NPCs);
         setTerminal((prevTerminal) => [
