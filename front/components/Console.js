@@ -633,6 +633,7 @@ export default function Home() {
   setArmor();
   setItems();
   setEnemies();
+  setStores();
   CustomState.printState();
 
   // Listening Events UseEffect
@@ -2619,17 +2620,21 @@ export default function Home() {
       } else if (game_state == "DEAD") {
       } else if (game_state == "STORE") {
         if (message.toLocaleLowerCase() == "shop") {
-          getUser().then((result) => {
-            let TargetNPC;
-            currUser = result;
-            let local_user = CustomState.getUserState(currUser.id);
-            CustomState.getState().npcs.map((npc) => {
-              if (npc.location === local_user.character.location) {
-                TargetNPC = npc;
-              }
-            });
+          // getUser().then((result) => {
+          //   let TargetNPC;
+          //   currUser = result;
+          //   let local_user = CustomState.getUserState(currUser.id);
+          //   CustomState.getState().npcs.map((npc) => {
+          //     if (npc.location === local_user.character.location) {
+          //       TargetNPC = npc;
+          //     }
+          //   });
+          // });
+          // talkToNPC(TargetNPC, "shop");
+          CustomState.dispatch({
+            type: "UPDATE_GAME_STATE",
+            payload: GAME_STATES.SHOPPING, // Or whatever the next game state is
           });
-          talkToNPC(TargetNPC, "shop");
         } else if (message.toLocaleLowerCase() == "chat") {
           getUser().then((result) => {
             let TargetNPC;
@@ -2700,6 +2705,42 @@ export default function Home() {
         getUser().then((result) => {
           currUser = result;
           let local_user = CustomState.getUserState(currUser.id);
+          let shopOwner;
+          let currentStore;
+          CustomState.getState().npcs.map((npc) => {
+            if (npc.location === local_user.character.location) {
+              shopOwner = npc;
+            }
+          });
+          CustomState.getState().Stores.map((store) => {
+            if (store.owner) {
+              currentStore = store;
+            }
+          });
+          console.log("SHOPPING DATA");
+          console.log(shopOwner);
+          console.log(currentStore);
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Welcome to ${
+                currentStore.name
+              }, here is what we have in stock:
+              ${currentStore.items.map((item) => {
+                return item;
+              })}`,
+            }, // updated line
+          ]);
+          function processInput(playerInput, playerData, currentStore) {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `You stop talking and walk away.`,
+              }, // updated line
+            ]);
+          }
         });
       } else if (game_state == "TRADE") {
       } else if (game_state == "LEVELUP") {
