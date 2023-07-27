@@ -2707,13 +2707,15 @@ export default function Home() {
           let local_user = CustomState.getUserState(currUser.id);
           let shopOwner;
           let currentStore;
+          let currentItem = null;
+          let currentItemCheckout = null;
           CustomState.getState().npcs.map((npc) => {
-            if (npc.location === local_user.character.location) {
+            if (npc.location === local_user.character.current_location) {
               shopOwner = npc;
             }
           });
           CustomState.getState().Stores.map((store) => {
-            if (store.owner) {
+            if (store.owner == shopOwner.name) {
               currentStore = store;
             }
           });
@@ -2728,16 +2730,105 @@ export default function Home() {
                 currentStore.name
               }, here is what we have in stock:
               ${currentStore.items.map((item) => {
-                return item;
+                let itemNumber = 0;
+                return `${(itemNumber += 1)}: ${item}`;
               })}`,
             }, // updated line
           ]);
-          function processInput(playerInput, playerData, currentStore) {
+          if (
+            typeof message == "number" &&
+            message <= currentStore.items.length
+          ) {
+            currentItem = currentStore.items[message - 1];
             setTerminal((prevTerminal) => [
               ...prevTerminal,
               {
                 type: "system",
-                message: `You stop talking and walk away.`,
+                message: `Is ${currentItem} what you want?`,
+              }, // updated line
+            ]);
+          } else if (message.toLowerCase() == "leave") {
+            CustomState.dispatch({
+              type: "UPDATE_GAME_STATE",
+              payload: GAME_STATES.GAME, // Or whatever the next game state is
+            });
+          } else if (message.toLowerCase() == "yes" && currentItem != null) {
+            let isWeapon = false;
+            let isItem = false;
+            let isArmor = false;
+            CustomState.getState().Weapons.map((weapon) => {
+              if (currentItem == weapon.name) {
+                isWeapon = true;
+                currentItemCheckout = weapon;
+              }
+            });
+            CustomState.getState().items.map((item) => {
+              if (currentItem == item.name) {
+                isItem = true;
+                currentItemCheckout = item;
+              }
+            });
+            CustomState.getState().Armor.map((armor) => {
+              if (currentItem == armor.name) {
+                isArmor = true;
+                currentItemCheckout = armor;
+              }
+            });
+            if (currentItemCheckout.cost <= local_user.character.credits) {
+              CustomState.dispatch({
+                type: "UPDATE_USER",
+                payload: {
+                  userId: currUser.id,
+                  data: {
+                    inventory:
+                      `${CustomState.getUserState(currUser.id).inventory}\n` +
+                      `${currentItem}`,
+                  },
+                },
+              });
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `${shopOwner.name} sold you the ${currentItem} for ${currentItemCheckout.cost}`,
+                }, // updated line
+              ]);
+              currentItem = null;
+              currentItemCheckout = null;
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `Welcome to ${
+                    currentStore.name
+                  }, here is what we have in stock:
+                  ${currentStore.items.map((item) => {
+                    let itemNumber = 0;
+                    return `${(itemNumber += 1)}: ${item}`;
+                  })}`,
+                }, // updated line
+              ]);
+            } else {
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `You can't afford that item.`,
+                }, // updated line
+              ]);
+            }
+            // characterData.char_credits
+          } else if (message.toLowerCase() == "no") {
+            CustomState.dispatch({
+              type: "UPDATE_GAME_STATE",
+              payload: GAME_STATES.GAME, // Or whatever the next game state is
+            });
+          } else {
+            setTerminal((prevTerminal) => [
+              ...prevTerminal,
+              {
+                type: "system",
+                message: `Item does not exist. Try again.`,
               }, // updated line
             ]);
           }
