@@ -23,7 +23,6 @@ export const ENEMY_STATES = {
 
 let state = {
   users: {},
-  items: [],
   loot: [],
   combatState: {},
   corpses: [],

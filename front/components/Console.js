@@ -37,6 +37,7 @@ export default function Home() {
   const startSpawn = useRef(false);
   const corpseCheck = useRef(false);
   const firstLook = useRef(false);
+  const firstHello = useRef(false);
   let gameState = CustomState.getGameState();
 
   let currUser;
@@ -116,7 +117,6 @@ export default function Home() {
       });
     }
   };
-
   function sendToDeadRoom(player) {
     getUser().then(async (result) => {
       currUser = result;
@@ -1466,7 +1466,7 @@ export default function Home() {
         if (CustomState.getState().loot.includes(`${itemNameCapitalized}`)) {
           inInventory = true;
         }
-        CustomState.getState().items.map((item) => {
+        CustomState.getState().Items.map((item) => {
           if (item.name == itemName.message) {
             if (item.canUse == true) {
               canUse = true;
@@ -2635,6 +2635,13 @@ export default function Home() {
             type: "UPDATE_GAME_STATE",
             payload: GAME_STATES.SHOPPING, // Or whatever the next game state is
           });
+          setTerminal((prevTerminal) => [
+            ...prevTerminal,
+            {
+              type: "system",
+              message: `Enter hello to get shop owners attention.`,
+            }, // updated line
+          ]);
         } else if (message.toLocaleLowerCase() == "chat") {
           getUser().then((result) => {
             let TargetNPC;
@@ -2721,18 +2728,23 @@ export default function Home() {
               currentStore = store;
             }
           });
-          setTerminal((prevTerminal) => [
-            ...prevTerminal,
-            {
-              type: "system",
-              message: `Welcome to ${
-                currentStore.name
-              }, here is what we have in stock:
-        ${currentStore.items.map((item, index) => {
-          return `${index + 1}: ${item}`;
-        })}`,
-            },
-          ]);
+          if (!firstHello.current) {
+            if (!firstHello.current) {
+              setTerminal((prevTerminal) => [
+                ...prevTerminal,
+                {
+                  type: "system",
+                  message: `Welcome to ${
+                    currentStore.name
+                  }, here is what we have in stock:
+            ${currentStore.items.map((item, index) => {
+              return `${index + 1}: ${item}`;
+            })}`,
+                },
+              ]);
+              firstHello.current = true;
+            }
+          }
           if (message <= currentStore.items.length) {
             currentItem = currentStore.items[message - 1];
             // setTerminal((prevTerminal) => [
@@ -2744,7 +2756,7 @@ export default function Home() {
             // ]);
 
             let weapons = CustomState.getState().Weapons;
-            let items = CustomState.getState().items;
+            let items = CustomState.getState().Items;
             let armor = CustomState.getState().Armor;
 
             currentItemCheckout = weapons.find(
@@ -2859,19 +2871,6 @@ export default function Home() {
                 {
                   type: "system",
                   message: `${shopOwner.name} sold you the ${currentItem} for ${currentItemCheckout.cost}`,
-                },
-              ]);
-              setTerminal((prevTerminal) => [
-                ...prevTerminal,
-                {
-                  type: "system",
-                  message: `Welcome to ${
-                    currentStore.name
-                  }, here is what we have in stock:
-            ${currentStore.items.map((item) => {
-              let itemNumber = 0;
-              return `${(itemNumber += 1)}: ${item}`;
-            })}`,
                 },
               ]);
             } else {
