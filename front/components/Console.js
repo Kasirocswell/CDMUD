@@ -1462,13 +1462,13 @@ export default function Home() {
             loot.item_name != itemNameCapitalized;
           }),
         ];
-
-        if (CustomState.getState().loot.includes(`${itemNameCapitalized}`)) {
+        if (local_user.inventory.includes(`${itemNameCapitalized}`)) {
           inInventory = true;
         }
-        CustomState.getState().Items.map((item) => {
-          if (item.name == itemName.message) {
-            if (item.canUse == true) {
+        let itemList = CustomState.getState().Items;
+        itemList.map((item) => {
+          if (item.name == itemNameCapitalized) {
+            if (item.can_use == true) {
               canUse = true;
               console.log("can use?");
               console.log(canUse);
@@ -2804,9 +2804,8 @@ export default function Home() {
                   message: `Welcome to ${
                     currentStore.name
                   }, here is what we have in stock:
-            ${currentStore.items.map((item) => {
-              let itemNumber = 0;
-              return `${(itemNumber += 1)}: ${item}`;
+            ${currentStore.items.map((item, index) => {
+              return `${index + 1}: ${item}`;
             })}`,
                 },
               ]);
@@ -2824,6 +2823,7 @@ export default function Home() {
               type: "UPDATE_GAME_STATE",
               payload: GAME_STATES.GAME, // Or whatever the next game state is
             });
+            firstHello.current = false;
           } else if (message.toLowerCase() == "yes") {
             let weapons = CustomState.getState().Weapons;
             let items = CustomState.getState().items;
