@@ -243,12 +243,13 @@ export default function Home() {
       let totalDamage;
 
       if (weaponRight != undefined) {
+        console.log("WEAPON DAMAGE");
+        console.log(weaponRightDamage);
         totalDamage =
-          Number(local_user.attributes.str) + Number(weaponRightDamage);
+          Number(local_user.attributes.str) + Number(weaponRightDamage[0]);
       } else {
         totalDamage = Number(local_user.attributes.str);
       }
-      totalDamage = 16;
       enemyHealth[enemy.id] -= totalDamage;
 
       setTerminal((prevTerminal) => [
@@ -1444,6 +1445,9 @@ export default function Home() {
     });
     socket.on("yield check", () => {});
     socket.on("use check", (itemName) => {
+      let buffMod;
+      let buffAttribute;
+      let buffValue;
       let canUse = false;
       let inInventory = false;
       let itemNameMessage = itemName.message;
@@ -1457,22 +1461,24 @@ export default function Home() {
         let currUser = result;
         let local_user = CustomState.getUserState(currUser.id);
 
-        let newInventory = [
-          ...CustomState.getState().loot.filter((loot) => {
-            loot.item_name != itemNameCapitalized;
-          }),
-        ];
         if (local_user.inventory.includes(`${itemNameCapitalized}`)) {
           inInventory = true;
         }
         let itemList = CustomState.getState().Items;
+        let itemBuffArray;
+        let currentItem;
+        let buffAttr;
         itemList.map((item) => {
           if (item.name == itemNameCapitalized) {
             if (item.can_use == true) {
               canUse = true;
-              console.log("can use?");
-              console.log(canUse);
+              itemBuffArray = item.buffs.split(" ");
+              currentItem = item;
             }
+          }
+
+          if (local_user.inventory.includes(itemNameCapitalized)) {
+            inInventory = true;
           }
         });
 
@@ -1492,6 +1498,68 @@ export default function Home() {
             ...prevTerminal,
             { type: "system", message: `You used ${itemNameCapitalized}` }, // updated line
           ]);
+
+          itemList.map((item) => {
+            if (item.name == itemNameCapitalized) {
+            }
+            if (currentItem.type == "health") {
+              CustomState.dispatch({
+                type: "UPDATE_USER",
+                payload: {
+                  userId: currUser.id,
+                  data: {
+                    character: {
+                      ...local_user.character,
+                      health:
+                        Number(local_user.character.health) +
+                        Number(itemBuffArray[2]),
+                    },
+                  },
+                },
+              });
+              console.log("You healed yourself.");
+            } else if (currentItem.type == "attributes") {
+              buffMod = itemBuffArray[0];
+              if (buffMod == "str") {
+                buffAttr = local_user.attributes.str;
+              } else if (buffMod == "spd") {
+                buffAttr = local_user.attributes.spd;
+              } else if (buffMod == "agi") {
+                buffAttr = local_user.attributes.agi;
+              } else if (buffMod == "cha") {
+                buffAttr = local_user.attributes.cha;
+              } else if (buffMod == "def") {
+                buffAttr = local_user.attributes.def;
+              } else if (buffMod == "wis") {
+                buffAttr = local_user.attributes.wis;
+              } else if (buffMod == "per") {
+                buffAttr = local_user.attributes.per;
+              } else if (buffMod == "int") {
+                buffAttr = local_user.attributes.int;
+              } else if (buffMod == "lck") {
+                buffAttr = local_user.attributes.lck;
+              } else if (buffMod == "end") {
+                buffAttr = local_user.attributes.end;
+              } else {
+              }
+
+              CustomState.dispatch({
+                type: "UPDATE_USER",
+                payload: {
+                  userId: currUser.id,
+                  data: {
+                    attributes: {
+                      ...attributes,
+                      [itemBuffArray[0]]:
+                        Number(buffAttr) + Number(itemBuffArray[2]),
+                    },
+                  },
+                },
+              });
+            } else {
+              console.log("Item doesn't have a valid buff type");
+            }
+          });
         } else {
           console.log("You can't use that");
         }
