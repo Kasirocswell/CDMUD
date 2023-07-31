@@ -1598,7 +1598,7 @@ export default function Home() {
             if (room.room_name.toLowerCase() == current_room.toLowerCase()) {
               return setTerminal((prevTerminal) => [
                 ...prevTerminal,
-                { type: "system", message: `${room.description}` }, // updated line
+                { type: "system", message: `${room.details}` }, // updated line
               ]);
             } else {
             }
@@ -2707,7 +2707,7 @@ export default function Home() {
             ...prevTerminal,
             {
               type: "system",
-              message: `Enter hello to get shop owners attention.`,
+              message: `If you have enough credits, you can have whatever. Here's whats currently in stock:`,
             }, // updated line
           ]);
         } else if (message.toLocaleLowerCase() == "chat") {
