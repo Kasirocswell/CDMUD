@@ -947,6 +947,11 @@ export default function Home() {
           )
           .map((npc) => npc.name);
 
+        let playersInRoom = CustomState.getState().users.filter(
+          (user) =>
+            user.current_location == local_user.character.current_location
+        );
+
         console.log("NPC DATA");
         console.log(NPCs);
         setTerminal((prevTerminal) => [
@@ -958,7 +963,7 @@ export default function Home() {
     Loot in the room: ${roomLoot} ${corpsesInRoom}
     NPCs in the room: ${npcsInRoom}
     Enemies in the room: ${enemiesInRoom}
-    Players in the room: 
+    Players in the room: ${playersInRoom}
                                       `,
           }, // updated line
         ]);
