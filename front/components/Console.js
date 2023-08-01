@@ -639,7 +639,7 @@ export default function Home() {
 
   // Listening Events UseEffect
   useEffect(() => {
-    socket = io("http://localhost:3000");
+    socket = io("http://146.190.155.158:3000");
 
     process.on("SIGINT", clearRespawnInterval);
     process.on("SIGTERM", clearRespawnInterval);
