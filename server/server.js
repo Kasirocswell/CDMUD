@@ -1,9 +1,17 @@
 const express = require("express");
-const http = require("http");
+const https = require("https");
+const fs = require("fs");
 const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app);
+
+// Provide the key and certificate
+const options = {
+  key: fs.readFileSync("./key.pem"),
+  cert: fs.readFileSync("./cert.pem"),
+};
+
+const server = https.createServer(options, app);
 
 // Configure CORS
 const io = new Server(server, {
@@ -15,6 +23,11 @@ const io = new Server(server, {
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
+});
+
+// Listen on HTTPS
+server.listen(3000, () => {
+  console.log("Server running at https://localhost:3000/");
 });
 
 io.on("connection", (socket) => {

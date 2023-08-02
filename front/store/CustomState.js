@@ -22,7 +22,7 @@ export const ENEMY_STATES = {
 };
 
 let state = {
-  users: {},
+  users: [],
   loot: [],
   combatState: {},
   corpses: [],
