@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
 
 // Listen on HTTPS
 server.listen(3000, () => {
-  console.log("Server running at https://localhost:3000/");
+  console.log("Server running at https://146.190.155.158:3000/");
 });
 
 io.on("connection", (socket) => {
@@ -242,8 +242,4 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("A client disconnected");
   });
-});
-
-server.listen(3000, () => {
-  console.log("Server listening on port 3000");
 });
