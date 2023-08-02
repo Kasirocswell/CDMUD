@@ -2,8 +2,6 @@ import Login from "../components/Login";
 import Signup from "../components/Singup";
 import Console from "../components/Console";
 import { useState } from "react";
-import backgroundImage from "../public/space.jpg";
-import Image from "next/Image";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState();

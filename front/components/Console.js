@@ -965,7 +965,7 @@ export default function Home() {
     Enemies in the room: ${enemiesInRoom}
     Players in the room: ${playersInRoom}
                                       `,
-          }, // updated line
+          },
         ]);
       });
     });
