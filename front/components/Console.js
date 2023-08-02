@@ -639,7 +639,7 @@ export default function Home() {
 
   // Listening Events UseEffect
   useEffect(() => {
-    socket = io("https://146.190.155.158:443");
+    socket = io("https://143.198.133.26:443");
 
     process.on("SIGINT", clearRespawnInterval);
     process.on("SIGTERM", clearRespawnInterval);
