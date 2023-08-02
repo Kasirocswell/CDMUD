@@ -26,8 +26,8 @@ app.get("/", (req, res) => {
 });
 
 // Listen on HTTPS
-server.listen(3000, () => {
-  console.log("Server running at https://146.190.155.158:3000/");
+server.listen(443, () => {
+  console.log("Server running at https://146.190.155.158:443/");
 });
 
 io.on("connection", (socket) => {
